@@ -1,0 +1,128 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { ShoppingBag, Heart, User, ScanEye, LayoutGrid } from 'lucide-react-native';
+
+const { width } = Dimensions.get('window');
+
+const Footer = () => {
+  return (
+    <View style={styles.footerWrapper}>
+      
+      <View style={styles.actionSection}>
+        <TouchableOpacity style={styles.buyButton}>
+          <ShoppingBag size={20} color="#fff" strokeWidth={2} />
+          <Text style={styles.buyButtonText}>Add to Bag</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.navBar}>
+        <TouchableOpacity style={styles.navItem}>
+          <LayoutGrid size={22} color="#D4AF37" strokeWidth={2} />
+          <Text style={[styles.navLabel, {color: '#D4AF37'}]}>Atelier</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem}>
+          <ShoppingBag size={22} color="#94a3b8" strokeWidth={1.5} />
+          <Text style={styles.navLabel}>Shop</Text>
+        </TouchableOpacity>
+
+        <View style={styles.centerContainer}>
+          <TouchableOpacity style={styles.arCircle}>
+            <ScanEye size={24} color="#fff" strokeWidth={2} />
+          </TouchableOpacity>
+          <Text style={styles.arLabelText}>Try-On</Text>
+        </View>
+
+        <TouchableOpacity style={styles.navItem}>
+          <Heart size={22} color="#94a3b8" strokeWidth={1.5} />
+          <Text style={styles.navLabel}>Wishlist</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem}>
+          <User size={22} color="#94a3b8" strokeWidth={1.5} />
+          <Text style={styles.navLabel}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+      
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  footerWrapper: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    position: 'absolute',
+    bottom: 0,
+    width: width,
+  },
+  actionSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  buyButton: {
+    backgroundColor: '#C5A059', 
+    height: 55,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    shadowColor: '#C5A059',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  buyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 80,
+    paddingBottom: 20, 
+  },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  navLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  centerContainer: {
+    alignItems: 'center',
+    marginTop: -25,
+  },
+  arCircle: {
+    backgroundColor: '#1a1a1a',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  arLabelText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginTop: 4,
+  }
+});
+
+export default Footer;
