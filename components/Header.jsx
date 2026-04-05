@@ -1,12 +1,15 @@
 
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { Search, Gem } from 'lucide-react-native'; // Ensure these are installed
+import { Search, Gem, ChevronLeft } from 'lucide-react-native'; // Ensure these are installed
 
-const Header = () => {
+const Header = ({GoBack}) => {
   return (
     <View style={styles.headerContainer}>
       
       <View style={styles.topRow}>
+        <TouchableOpacity onPress={GoBack}>
+          <ChevronLeft size={38} color={'black'} strokeWidth={1.5}></ChevronLeft>
+        </TouchableOpacity>
         <Text style={styles.title}>Lumina Atelier</Text>
         <TouchableOpacity>
           <Gem size={24} color="#D4AF37" strokeWidth={1.5} />
