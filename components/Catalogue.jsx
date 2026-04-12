@@ -9,6 +9,7 @@ import {
   Dimensions 
 } from 'react-native';
 import { Heart, Filter, Grid } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 60) / 2; 
@@ -20,12 +21,13 @@ const DATA = [
   { id: '4', name: 'Rose Petal', price: '$2,100', material: 'Rose Gold', image: 'https://purepng.com/public/uploads/large/purepng.com-silver-ringjewelryjewellerybroochesringsnecklacesearringsearringsornamentsflowersdiamondsilverring-1701528881414tgi3w.png' },
 ];
 
-const Catalogue = ({ onSelectProduct }) => {
+const Catalogue = () => {
+  const navigation = useNavigation();
+
   const renderItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.card} 
-      onPress={() => onSelectProduct(item)}
-      activeOpacity={0.8}
+      onPress={()=>{navigation.navigate("Details", { ...item })}}
     >
       <View style={styles.imageContainer}>
         <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="contain" />
@@ -64,6 +66,8 @@ const Catalogue = ({ onSelectProduct }) => {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
+      <View style={{margin:50}}></View>
+
     </View>
   );
 };

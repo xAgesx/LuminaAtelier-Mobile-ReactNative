@@ -1,7 +1,8 @@
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { TouchableOpacity } from 'react-native'
 import { Camera } from 'lucide-react-native'
-const Details = () => {
+const Details = ({ route }) => {
+  const { openAR } = route.params;
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -15,8 +16,8 @@ const Details = () => {
             style={styles.mainImage}
 
           />
-          <TouchableOpacity style={styles.arButton}>
-            <Camera size={16} color="#1a1a1a" strokeWidth={2} />
+          <TouchableOpacity style={styles.arButton} onPress={openAR}>
+            <Camera size={16} color="#1a1a1a" />
             <Text style={styles.arButtonText}>Try on Your Hand</Text>
           </TouchableOpacity>
         </View>
@@ -24,10 +25,10 @@ const Details = () => {
         <View style={styles.infoRow}>
           <View style={styles.titleColumn}>
             <Text style={styles.label}>Selected Piece</Text>
-            <Text style={styles.productName}>Eternity Diamond Band, 18k Gold</Text>
+            <Text style={styles.productName}>{route.params.name}</Text>
           </View>
           <View style={styles.priceColumn}>
-            <Text style={styles.price}>$3,200</Text>
+            <Text style={styles.price}>{route.params.price}</Text>
             <Text style={styles.stockStatus}>● In Stock</Text>
           </View>
         </View>
@@ -49,7 +50,7 @@ const Details = () => {
             <Text style={styles.specValue}>18k Yellow Gold</Text>
           </View>
         </View>
-      <View style={{ height: 200 }} />
+        <View style={{ height: 200 }} />
       </View>
     </ScrollView>
 

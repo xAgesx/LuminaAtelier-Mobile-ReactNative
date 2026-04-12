@@ -1,30 +1,39 @@
 
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Search, Gem, ChevronLeft } from 'lucide-react-native'; // Ensure these are installed
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 
-const Header = ({GoBack}) => {
+const Header = ({ navigation, back }) => {
+  // const navigation = useNavigation();
+  // const canGoBack = useNavigationState(state => state ? state.index > 0 : false);
   return (
     <View style={styles.headerContainer}>
-      
+
       <View style={styles.topRow}>
-        <TouchableOpacity onPress={GoBack}>
-          <ChevronLeft size={38} color={'black'} strokeWidth={1.5}></ChevronLeft>
-        </TouchableOpacity>
+
+        {back &&
+           (
+            <TouchableOpacity onPress={()=>{navigation.goBack()}} >
+              <ChevronLeft size={38} color={'black'} strokeWidth={1.5}></ChevronLeft>
+            </TouchableOpacity>
+          )
+        }
+
         <Text style={styles.title}>Lumina Atelier</Text>
         <TouchableOpacity>
           <Gem size={24} color="#D4AF37" strokeWidth={1.5} />
         </TouchableOpacity>
       </View>
 
-      
-      <View style={styles.searchSection}>
+
+      {(<View style={styles.searchSection} >
         <Search size={18} color="#94a3b8" style={styles.searchIcon} />
-        <TextInput 
+        <TextInput
           style={styles.input}
           placeholder="Search"
           placeholderTextColor="#94a3b8"
         />
-      </View>
+      </View>)}
     </View>
   );
 };
@@ -32,7 +41,7 @@ const Header = ({GoBack}) => {
 const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 20,
-    paddingTop: 60, 
+    paddingTop: 60,
     paddingBottom: 20,
     backgroundColor: '#fff',
   },
@@ -44,14 +53,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '300', 
+    fontWeight: '300',
     color: '#1a1a1a',
     letterSpacing: 0.5,
   },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9', 
+    backgroundColor: '#f1f5f9',
     borderRadius: 12,
     paddingHorizontal: 12,
   },
