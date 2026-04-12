@@ -2,7 +2,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { TouchableOpacity } from 'react-native'
 import { Camera } from 'lucide-react-native'
 const Details = ({ route }) => {
-  const { openAR } = route.params;
+  const { product, onTryOn } = route.params || {};
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -16,7 +16,7 @@ const Details = ({ route }) => {
             style={styles.mainImage}
 
           />
-          <TouchableOpacity style={styles.arButton} onPress={openAR}>
+          <TouchableOpacity style={styles.arButton} onPress={()=>onTryOn && onTryOn()}>
             <Camera size={16} color="#1a1a1a" />
             <Text style={styles.arButtonText}>Try on Your Hand</Text>
           </TouchableOpacity>
