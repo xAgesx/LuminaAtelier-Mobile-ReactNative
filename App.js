@@ -17,7 +17,7 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   const [showAR, setShowAR] = useState(false);
 
-  // Full screen AR mode
+ 
   if (showAR) {
     return (
       <View style={styles.container}>

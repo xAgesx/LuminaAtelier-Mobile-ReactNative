@@ -120,7 +120,7 @@ export default function ARVisualizer({ onExit }) {
     const loader = new GLTFLoader();
     
     try {
-      const asset = Asset.fromModule(require('../assets/models/ring.glb'));
+      const asset = Asset.fromModule(require('../assets/models/ring1.glb'));
       await asset.downloadAsync();
 
       loader.load(
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   dragHint: { color: '#D4AF37', fontSize: 11, textAlign: 'center', marginBottom: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
   sliderCard: {
     width: width - 40,
-    backgroundColor: 'rgba(15, 23, 42, 0.9)', // Deep slate for premium look
+    backgroundColor: 'rgba(15, 23, 42, 0.9)',
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,

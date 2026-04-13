@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { ShoppingBag, Heart, User, ScanEye, LayoutGrid } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
 const Footer = () => {
+  const navigation = useNavigation();
+  
   return (
     <View style={styles.footerWrapper}>
       
@@ -21,7 +24,7 @@ const Footer = () => {
           <Text style={[styles.navLabel, {color: '#D4AF37'}]}>Atelier</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={()=>{navigation.navigate("Auth")}}>
           <ShoppingBag size={22} color="#94a3b8" strokeWidth={1.5} />
           <Text style={styles.navLabel}>Shop</Text>
         </TouchableOpacity>
