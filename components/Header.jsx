@@ -3,7 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-nativ
 import { Search, Gem, ChevronLeft } from 'lucide-react-native'; // Ensure these are installed
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 
-const Header = ({ navigation, back }) => {
+const Header = ({ navigation, back ,route}) => {
   // const navigation = useNavigation();
   // const canGoBack = useNavigationState(state => state ? state.index > 0 : false);
   return (
@@ -11,14 +11,14 @@ const Header = ({ navigation, back }) => {
 
       <View style={styles.topRow}>
 
-        {back &&
+        {route.name !== 'Catalogue' &&
            (
             <TouchableOpacity onPress={()=>{navigation.goBack()}} >
               <ChevronLeft size={38} color={'black'} strokeWidth={1.5}></ChevronLeft>
             </TouchableOpacity>
           )
         }
-
+        {/* <Text>{route.name}</Text> */}
         <Text style={styles.title}>Lumina Atelier</Text>
         <TouchableOpacity>
           <Gem size={24} color="#D4AF37" strokeWidth={1.5} />

@@ -1,8 +1,8 @@
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { TouchableOpacity } from 'react-native'
 import { Camera } from 'lucide-react-native'
-const Details = ({ route }) => {
-  const { product, onTryOn } = route.params || {};
+const Details = ({ route ,onTryOn}) => {
+  
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}

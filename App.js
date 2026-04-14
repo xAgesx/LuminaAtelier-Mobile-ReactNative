@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import Catalogue from './components/Catalogue';
 import Details from './components/Details';
 import ARVisualizer from './components/ARVisualizer';
+import Auth from './Pages/Auth';
 
 
 const Stack = createNativeStackNavigator();
@@ -17,7 +18,7 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   const [showAR, setShowAR] = useState(false);
 
- 
+
   if (showAR) {
     return (
       <View style={styles.container}>
@@ -33,16 +34,26 @@ export default function App() {
         <View style={{ flex: 1 }}>
           <Stack.Navigator
             initialRouteName="Catalogue"
-            screenOptions={{
-              headerShown: true,
-              header: (props) => <Header {...props}/>
-            }}
+            screenOptions={({ route }) => ({
+              headerShown: route.name !== 'Auth',
+              header: (props) => <Header {...props} />
+            })}
           >
-            <Stack.Screen name="Catalogue" component={Catalogue} />
-            <Stack.Screen 
-              name="Details" 
-              component={Details} 
-              initialParams={{ onTryOn: () => setShowAR(true) }}
+            <Stack.Screen
+              name="Catalogue"
+              component={Catalogue}
+            />
+
+            <Stack.Screen name="Details">
+              {(props) => (
+                <Details {...props} onTryOn={() => setShowAR(true)} />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen
+              name="Auth"
+              component={Auth}
+              options={{ headerShown: false }}
             />
           </Stack.Navigator>
         </View>

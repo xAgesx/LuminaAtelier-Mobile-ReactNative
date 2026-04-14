@@ -35,10 +35,9 @@ export default function ARVisualizer({ onExit }) {
           modelRef.current.position.x = newX;
           modelRef.current.position.y = newY;
 
-          // Move shadow with the ring
           if (shadowRef.current) {
             shadowRef.current.position.x = newX;
-            shadowRef.current.position.y = newY - (0.15 * scale); // Offset shadow slightly down
+            shadowRef.current.position.y = newY - (0.15 * scale); 
           }
         }
       },
@@ -87,22 +86,18 @@ export default function ARVisualizer({ onExit }) {
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
     // CINEMATIC LIGHTING SETUP
-    // 1. Warm key light (simulates indoor/warm lighting)
     const keyLight = new THREE.DirectionalLight(0xfff5e1, 1.2);
     keyLight.position.set(5, 10, 5);
     scene.add(keyLight);
 
-    // 2. Cool rim light (adds definition to edges)
     const rimLight = new THREE.DirectionalLight(0xe1f5ff, 0.8);
     rimLight.position.set(-5, 5, -2);
     scene.add(rimLight);
 
-    // 3. Subtle Fill
     scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
     camera.position.z = 3;
 
-    // SHADOW PLANE: This is crucial for "grounding" the ring on the finger
     const shadowGeometry = new THREE.CircleGeometry(0.5, 32);
     const shadowMaterial = new THREE.MeshBasicMaterial({
       color: 0x000000,
@@ -111,7 +106,7 @@ export default function ARVisualizer({ onExit }) {
       side: THREE.DoubleSide
     });
     const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
-    shadow.rotation.x = Math.PI / 2.5; // Slight tilt to match finger angle
+    shadow.rotation.x = Math.PI / 2.5; 
     shadow.position.set(positionRef.current.x, positionRef.current.y - 0.1, -0.1);
     shadow.scale.set(scale * 2, scale * 2, 1);
     scene.add(shadow);
@@ -120,7 +115,7 @@ export default function ARVisualizer({ onExit }) {
     const loader = new GLTFLoader();
     
     try {
-      const asset = Asset.fromModule(require('../assets/models/ring1.glb'));
+      const asset = Asset.fromModule(require('../assets/models/ring2.glb'));
       await asset.downloadAsync();
 
       loader.load(
@@ -133,11 +128,10 @@ export default function ARVisualizer({ onExit }) {
           
           model.traverse((child) => {
             if (child.isMesh) {
-              // ADVANCED PHYSICAL MATERIAL
               child.material = new THREE.MeshStandardMaterial({
-                color: new THREE.Color('#E6BE8A'), // Pale gold for realism
+                color: new THREE.Color('#E6BE8A'),
                 metalness: 1.0, 
-                roughness: 0.15, // Smooth but not a mirror
+                roughness: 0.15, 
                 envMapIntensity: 1.0,
               });
             }
@@ -148,7 +142,6 @@ export default function ARVisualizer({ onExit }) {
           setLoading(false);
 
           const render = () => {
-            // Very subtle auto-rotation to catch highlights if user isn't interacting
             // model.rotation.y += 0.002; 
             renderer.render(scene, camera);
             gl.endFrameEXP();
