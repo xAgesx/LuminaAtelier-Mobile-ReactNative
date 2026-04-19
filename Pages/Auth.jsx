@@ -23,7 +23,7 @@ export default function Auth({ navigation }) {
   const [agreed, setAgreed] = useState(false);
 
   const handleAuth = () => {
-    navigation.replace("Catalogue");
+    navigation.navigate("Catalogue");
     
   };
 

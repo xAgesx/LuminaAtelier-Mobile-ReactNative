@@ -1,16 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  Image, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Image,
+  TouchableOpacity,
   Dimensions,
   Modal,
-  Pressable
+  Pressable,
+  Animated
 } from 'react-native';
-import { Heart, Filter, Grid, LayoutList, Flame, Sparkles, Tag, X, Check } from 'lucide-react-native';
+import { Heart, Filter, Grid, LayoutList, Flame, Sparkles, Tag, X, Check, RotateCcw } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
@@ -29,7 +30,7 @@ const Catalogue = () => {
   const [isGridView, setIsGridView] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
-  
+
   // Advanced Filter States
   const [selectedMaterial, setSelectedMaterial] = useState('All');
   const [priceRange, setPriceRange] = useState('All');
@@ -49,11 +50,19 @@ const Catalogue = () => {
     { label: '$4,000+', min: 4000, max: Infinity },
   ];
 
+  const resetFilters = () => {
+    setActiveFilter('All');
+    setSelectedMaterial('All');
+    setPriceRange('All');
+  };
+
+  const isAnyFilterActive = activeFilter !== 'All' || selectedMaterial !== 'All' || priceRange !== 'All';
+
   const filteredData = useMemo(() => {
     return DATA.filter(item => {
       const matchesType = activeFilter === 'All' || item.type === activeFilter;
       const matchesMaterial = selectedMaterial === 'All' || item.material === selectedMaterial;
-      
+
       const priceConfig = priceOptions.find(p => p.label === priceRange);
       const matchesPrice = item.price >= priceConfig.min && item.price <= priceConfig.max;
 
@@ -63,27 +72,19 @@ const Catalogue = () => {
 
   const renderItem = ({ item }) => {
     const cardWidth = isGridView ? (width / 2) - 30 : width - 40;
-    
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         activeOpacity={0.9}
-        style={[styles.card, { width: cardWidth }]} 
+        style={[styles.card, { width: cardWidth }]}
         onPress={() => navigation.navigate("Details", { product: item })}
       >
         <View style={[styles.imageWrapper, { height: isGridView ? 180 : 280 }]}>
           <Image source={{ uri: item.image }} style={styles.img} resizeMode="contain" />
-          
-          {item.type === 'Deals' && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>OFFER</Text>
-            </View>
-          )}
-          
           <TouchableOpacity style={styles.favBtn}>
             <Heart size={18} color="#94a3b8" strokeWidth={1.5} />
           </TouchableOpacity>
         </View>
-
         <View style={styles.info}>
           <Text style={styles.mat}>{item.material}</Text>
           <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
@@ -95,7 +96,6 @@ const Catalogue = () => {
 
   return (
     <View style={styles.container}>
-      {/* Persistent Sticky Filter Bar */}
       <View style={styles.stickyHeader}>
         <FlatList
           data={filters}
@@ -106,31 +106,39 @@ const Catalogue = () => {
             const Icon = item.icon;
             const isActive = activeFilter === item.label;
             return (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setActiveFilter(item.label)}
                 style={[styles.chip, isActive && styles.activeChip]}
               >
-                {Icon && <Icon size={14} color={isActive ? "#fff" : "#64748b"} style={{marginRight: 6}} />}
+                {Icon && <Icon size={14} color={isActive ? "#fff" : "#64748b"} style={{ marginRight: 6 }} />}
                 <Text style={[styles.chipText, isActive && styles.activeChipText]}>{item.label}</Text>
               </TouchableOpacity>
             );
           }}
         />
-        
+
         <View style={styles.controlBar}>
-          <Text style={styles.countText}>{filteredData.length} Pieces found</Text>
-          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Text style={styles.countText}>{filteredData.length} Pieces found</Text>
+            {isAnyFilterActive && (
+              <TouchableOpacity onPress={resetFilters} style={styles.resetMini}>
+                <RotateCcw size={12} color="#6366f1" />
+                <Text style={styles.resetMiniText}>Reset</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           <View style={styles.actionRow}>
-            <TouchableOpacity 
-              style={styles.filterTrigger} 
+            <TouchableOpacity
+              style={styles.filterTrigger}
               onPress={() => setFilterModalVisible(true)}
             >
-              <Filter size={18} color="#1a1a1a" />
-              <Text style={styles.filterTriggerText}>Sort & Refine</Text>
+              <Filter size={18} color={isAnyFilterActive ? "#6366f1" : "#1a1a1a"} />
+              <Text style={[styles.filterTriggerText, isAnyFilterActive && { color: '#6366f1' }]}>Refine</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.layoutToggle} 
+            <TouchableOpacity
+              style={styles.layoutToggle}
               onPress={() => setIsGridView(!isGridView)}
             >
               {isGridView ? <LayoutList size={20} color="#1a1a1a" /> : <Grid size={20} color="#1a1a1a" />}
@@ -148,22 +156,33 @@ const Catalogue = () => {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         columnWrapperStyle={isGridView ? { justifyContent: 'space-between' } : null}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>No pieces found</Text>
+            <Text style={styles.emptySub}>Try adjusting your filters to find what you're looking for.</Text>
+            <TouchableOpacity style={styles.emptyReset} onPress={resetFilters}>
+              <Text style={styles.emptyResetText}>Clear All Filters</Text>
+            </TouchableOpacity>
+          </View>
+        }
       />
 
-      {/* Modern Filter Bottom Sheet / Modal */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isFilterModalVisible}
         onRequestClose={() => setFilterModalVisible(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay} 
+        <Pressable
+          style={styles.modalOverlay}
           onPress={() => setFilterModalVisible(false)}
         >
           <Pressable style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Refine Selection</Text>
+              <View>
+                <Text style={styles.modalTitle}>Refine Selection</Text>
+                <Text style={styles.modalSub}>Customize your discovery</Text>
+              </View>
               <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
                 <X size={24} color="#1a1a1a" />
               </TouchableOpacity>
@@ -173,8 +192,8 @@ const Catalogue = () => {
               <Text style={styles.sectionLabel}>Material</Text>
               <View style={styles.optionGrid}>
                 {materials.map((m) => (
-                  <TouchableOpacity 
-                    key={m} 
+                  <TouchableOpacity
+                    key={m}
                     onPress={() => setSelectedMaterial(m)}
                     style={[styles.optionItem, selectedMaterial === m && styles.activeOption]}
                   >
@@ -189,8 +208,8 @@ const Catalogue = () => {
               <Text style={styles.sectionLabel}>Price Range</Text>
               <View style={styles.optionGrid}>
                 {priceOptions.map((p) => (
-                  <TouchableOpacity 
-                    key={p.label} 
+                  <TouchableOpacity
+                    key={p.label}
                     onPress={() => setPriceRange(p.label)}
                     style={[styles.optionItem, priceRange === p.label && styles.activeOption]}
                   >
@@ -201,12 +220,22 @@ const Catalogue = () => {
               </View>
             </View>
 
-            <TouchableOpacity 
-              style={styles.applyBtn}
-              onPress={() => setFilterModalVisible(false)}
-            >
-              <Text style={styles.applyBtnText}>Show {filteredData.length} Results</Text>
-            </TouchableOpacity>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.resetBtn}
+                onPress={resetFilters}
+              >
+                <RotateCcw size={18} color="#1a1a1a" />
+                <Text style={styles.resetBtnText}>Reset All</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.applyBtn}
+                onPress={() => setFilterModalVisible(false)}
+              >
+                <Text style={styles.applyBtnText}>Show Results</Text>
+              </TouchableOpacity>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -216,7 +245,6 @@ const Catalogue = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  
   stickyHeader: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -239,25 +267,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f5f9',
   },
-  activeChip: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#1a1a1a',
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  activeChipText: {
-    color: '#fff',
-  },
+  activeChip: { backgroundColor: '#1a1a1a', borderColor: '#1a1a1a' },
+  chipText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
+  activeChipText: { color: '#fff' },
   controlBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#fff',
   },
   countText: {
     fontSize: 11,
@@ -266,34 +284,27 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  actionRow: {
+  resetMini: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
+    gap: 4,
+    backgroundColor: '#eef2ff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  filterTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  resetMiniText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6366f1',
+    textTransform: 'uppercase',
   },
-  filterTriggerText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  layoutToggle: {
-    padding: 4,
-  },
-
-  // List Styles
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 120,
-  },
-  card: {
-    marginBottom: 30,
-  },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+  filterTrigger: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  filterTriggerText: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  layoutToggle: { padding: 4 },
+  listContainer: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120 },
+  card: { marginBottom: 30 },
   imageWrapper: {
     width: '100%',
     backgroundColor: '#f8fafc',
@@ -304,10 +315,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f5f9',
   },
-  img: {
-    width: '75%',
-    height: '75%',
-  },
+  img: { width: '75%', height: '75%' },
   favBtn: {
     position: 'absolute',
     top: 15,
@@ -316,89 +324,36 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 5,
   },
-  badge: {
-    position: 'absolute',
-    top: 15,
-    left: 15,
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  info: {
-    marginTop: 15,
-    paddingHorizontal: 5,
-  },
-  mat: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#1a1a1a',
-    marginTop: 2,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginTop: 4,
-  },
+  info: { marginTop: 15, paddingHorizontal: 5 },
+  mat: { fontSize: 10, fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' },
+  name: { fontSize: 16, fontWeight: '400', color: '#1a1a1a', marginTop: 2 },
+  price: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginTop: 4 },
 
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
+  // Empty State
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 },
+  emptySub: { fontSize: 14, color: '#64748b', textAlign: 'center', paddingHorizontal: 40, marginBottom: 24 },
+  emptyReset: { backgroundColor: '#1a1a1a', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  emptyResetText: { color: '#fff', fontWeight: '600' },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     padding: 24,
-    minHeight: height * 0.6,
+    minHeight: height * 0.65,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
-  },
-  filterSection: {
-    marginBottom: 25,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 15,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  optionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 },
+  modalTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a' },
+  modalSub: { fontSize: 13, color: '#94a3b8', marginTop: 2 },
+  filterSection: { marginBottom: 25 },
+  sectionLabel: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 0.5 },
+  optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -410,31 +365,24 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
     gap: 8,
   },
-  activeOption: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#1a1a1a',
-  },
-  optionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  activeOptionText: {
-    color: '#fff',
-  },
-  applyBtn: {
-    backgroundColor: '#1a1a1a',
-    paddingVertical: 18,
-    borderRadius: 16,
+  activeOption: { backgroundColor: '#1a1a1a', borderColor: '#1a1a1a' },
+  optionText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
+  activeOptionText: { color: '#fff' },
+  modalFooter: { flexDirection: 'row', gap: 12, marginTop: 'auto', marginBottom: 20 },
+  resetBtn: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 'auto',
-    marginBottom: 20,
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#f1f5f9',
+    borderRadius: 16,
+    paddingVertical: 18,
   },
-  applyBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  resetBtnText: { fontWeight: '700', color: '#1a1a1a' },
+  applyBtn: { flex: 2, backgroundColor: '#1a1a1a', paddingVertical: 18, borderRadius: 16, alignItems: 'center' },
+  applyBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
 
 export default Catalogue;

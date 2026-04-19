@@ -1,32 +1,45 @@
-import React from 'react';
+import React, { useActionState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { ShoppingBag, Heart, User, ScanEye, LayoutGrid } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
 const Footer = () => {
   const navigation = useNavigation();
   
+  const currentRouteName = useNavigationState((state) => {
+    if (!state) return null;
+    const route = state.routes[state.index];
+    
+    return route.name;
+  });
+
+  const isDetails = currentRouteName === 'Details';
+
+  const isActive = (name) => currentRouteName === name;
+  const activeColor = "#D4AF37";
+  const inactiveColor = "#94a3b8";
+
   return (
     <View style={styles.footerWrapper}>
-      
-      <View style={styles.actionSection}>
+
+      {isDetails && <View style={styles.actionSection}>
         <TouchableOpacity style={styles.buyButton}>
           <ShoppingBag size={20} color="#fff" strokeWidth={2} />
           <Text style={styles.buyButtonText}>Add to Bag</Text>
         </TouchableOpacity>
-      </View>
+      </View>}
 
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.navItem}>
-          <LayoutGrid size={22} color="#D4AF37" strokeWidth={2} />
-          <Text style={[styles.navLabel, {color: '#D4AF37'}]}>Atelier</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => { navigation.navigate('Catalogue')}}>
+          <LayoutGrid size={22} color={isActive('Catalogue') ? activeColor : inactiveColor} strokeWidth={isActive('Catalogue') ? 2.5 : 1.5} />
+          <Text style={[styles.navLabel,{color : isActive('Catalogue') ? activeColor : inactiveColor}]}>Atelier</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={()=>{navigation.navigate("Auth")}}>
-          <ShoppingBag size={22} color="#94a3b8" strokeWidth={1.5} />
-          <Text style={styles.navLabel}>Shop</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => { navigation.navigate("Auth")}}>
+          <ShoppingBag size={22} color={isActive('Shop') ? activeColor : inactiveColor} strokeWidth={isActive('Shop') ? 2.5 : 1.5} />
+          <Text style={[styles.navLabel,{color : isActive('Shop') ? activeColor : inactiveColor}]}>Shop</Text>
         </TouchableOpacity>
 
         <View style={styles.centerContainer}>
@@ -36,17 +49,17 @@ const Footer = () => {
           <Text style={styles.arLabelText}>Try-On</Text>
         </View>
 
-        <TouchableOpacity style={styles.navItem}>
-          <Heart size={22} color="#94a3b8" strokeWidth={1.5} />
-          <Text style={styles.navLabel}>Wishlist</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => { navigation.navigate("Wishlist") }}>
+          <Heart size={22} color={isActive('Wishlist') ? activeColor : inactiveColor} strokeWidth={isActive('Wishlist') ? 2.5 : 1.5} />
+          <Text style={[styles.navLabel,{color : isActive('Wishlist') ? activeColor : inactiveColor}]}>Wishlist</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={()=>{navigation.navigate("Profile")}} >
-          <User size={22} color="#94a3b8" strokeWidth={1.5} />
-          <Text style={styles.navLabel}>Profile</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => { navigation.navigate("Profile") }} >
+          <User size={22} color={isActive('Profile') ? activeColor : inactiveColor} strokeWidth={isActive('Profile') ? 2.5 : 1.5} />
+          <Text style={[styles.navLabel,{color : isActive('Profile') ? activeColor : inactiveColor}]} >Profile</Text>
         </TouchableOpacity>
       </View>
-      
+
     </View>
   );
 };
@@ -65,7 +78,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   buyButton: {
-    backgroundColor: '#C5A059', 
+    backgroundColor: '#C5A059',
     height: 55,
     borderRadius: 15,
     flexDirection: 'row',
@@ -89,7 +102,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     height: 80,
-    paddingBottom: 20, 
+    paddingBottom: 20,
   },
   navItem: {
     alignItems: 'center',
