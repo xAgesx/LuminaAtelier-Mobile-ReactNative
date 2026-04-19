@@ -41,7 +41,7 @@ const Footer = () => {
           <Text style={styles.navLabel}>Wishlist</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={()=>{navigation.navigate("Profile")}} >
           <User size={22} color="#94a3b8" strokeWidth={1.5} />
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   },
   actionSection: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 0,
   },
   buyButton: {
     backgroundColor: '#C5A059', 

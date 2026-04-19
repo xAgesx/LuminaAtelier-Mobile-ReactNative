@@ -26,7 +26,7 @@ const Header = ({ navigation, back ,route}) => {
       </View>
 
 
-      {(<View style={styles.searchSection} >
+      {route.name == 'Catalogue' && (<View style={styles.searchSection} >
         <Search size={18} color="#94a3b8" style={styles.searchIcon} />
         <TextInput
           style={styles.input}

@@ -5,12 +5,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
+
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Catalogue from './components/Catalogue';
 import Details from './components/Details';
 import ARVisualizer from './components/ARVisualizer';
 import Auth from './Pages/Auth';
+import Profile from './Pages/Profile';
 
 
 const Stack = createNativeStackNavigator();
@@ -54,6 +56,10 @@ export default function App() {
               name="Auth"
               component={Auth}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={Profile}
             />
           </Stack.Navigator>
         </View>
