@@ -11,7 +11,7 @@ const Header = ({ navigation, back ,route}) => {
 
       <View style={styles.topRow}>
 
-        {route.name !== 'Catalogue' &&
+        {(route.name !== 'Catalogue' && route.name !== 'Shop' && route.name !== 'Wishlist' && route.name !== 'Profile') &&
            (
             <TouchableOpacity onPress={()=>{navigation.goBack()}} >
               <ChevronLeft size={38} color={'black'} strokeWidth={1.5}></ChevronLeft>

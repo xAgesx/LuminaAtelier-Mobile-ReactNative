@@ -1,83 +1,85 @@
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { TouchableOpacity } from 'react-native'
-import { Camera } from 'lucide-react-native'
+import React from 'react';
+import { 
+  Image, 
+  ScrollView, 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity 
+} from 'react-native';
+import { Camera } from 'lucide-react-native';
+
 const Details = ({ route, onTryOn }) => {
+  const { product } = route.params;
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
+      style={styles.container}
     >
-      <View style={styles.detailsContainer}>
+      <View style={styles.imageBox}>
+        <Image
+          source={{ uri: product.image }}
+          style={styles.mainImage}
+          resizeMode="contain"
+        />
+        <TouchableOpacity 
+          style={styles.arButton} 
+          onPress={() => onTryOn && onTryOn()}
+        >
+          <Camera size={18} color="#1a1a1a" />
+          <Text style={styles.arButtonText}>Try on Your Hand</Text>
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.imageBox}>
-          <Image
-            source={{ uri: 'https://purepng.com/public/uploads/large/purepng.com-silver-ringjewelryjewellerybroochesringsnecklacesearringsearringsornamentsflowersdiamondsilverring-1701528881414tgi3w.png' }}
-            style={styles.mainImage}
-
-          />
-          <TouchableOpacity style={styles.arButton} onPress={() => onTryOn && onTryOn()}>
-            <Camera size={16} color="#1a1a1a" />
-            <Text style={styles.arButtonText}>Try on Your Hand</Text>
-          </TouchableOpacity>
+      <View style={styles.content}>
+        {/* Title and Price */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.brandText}>{product.material || 'Premium'}</Text>
+            <Text style={styles.titleText}>{product.name}</Text>
+          </View>
+          <Text style={styles.priceText}>{product.price}</Text>
         </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.titleColumn}>
-            <Text style={styles.label}>Selected Piece</Text>
-            <Text style={styles.productName}>{route.params.name}</Text>
-          </View>
-          <View style={styles.priceColumn}>
-            <Text style={styles.price}>{route.params.price}</Text>
-            <Text style={styles.stockStatus}>● In Stock</Text>
-          </View>
-        </View>
-
-        <View style={styles.descriptionSection}>
-          <Text style={styles.sectionLabel}>Description</Text>
-          <Text style={styles.descriptionText}>
-            A classic, elegant band featuring round brilliant diamonds meticulously set in polished 18k gold.
+        <View style={styles.section}>
+          <Text style={styles.description}>
+            A handcrafted piece featuring precision-cut stones set in high-quality {product.material || 'metal'}. Designed for everyday elegance.
           </Text>
         </View>
 
-        <View style={styles.specsTable}>
+        <View style={styles.specContainer}>
           <View style={styles.specRow}>
-            <Text style={styles.specKey}>Diamond Carat Weight</Text>
-            <Text style={styles.specValue}>1.50ct</Text>
+            <Text style={styles.specKey}>Material</Text>
+            <Text style={styles.specValue}>{product.material || '18k Gold'}</Text>
           </View>
           <View style={styles.specRow}>
-            <Text style={styles.specKey}>Metal</Text>
-            <Text style={styles.specValue}>18k Yellow Gold</Text>
+            <Text style={styles.specKey}>Availability</Text>
+            <Text style={[styles.specValue, { color: '#22c55e' }]}>In Stock</Text>
+          </View>
+          <View style={[styles.specRow, { borderBottomWidth: 0 }]}>
+            <Text style={styles.specKey}>Shipping</Text>
+            <Text style={styles.specValue}>Free Express</Text>
           </View>
         </View>
-        <View style={{ height: 200 }} />
+
+        <View style={{ height: 100 }} />
       </View>
     </ScrollView>
-
-  )
-}
-
-export default Details
+  );
+};
 
 const styles = StyleSheet.create({
-
-  detailsContainer: {
-    padding: 20,
+  container: {
+    flex: 1,
     backgroundColor: '#fff',
-
-  },
-  scrollContent: {
-    padding: 20,
   },
   imageBox: {
-    width: '100%',
-    height: 320,
-    backgroundColor: '#e3dcd7',
-    borderRadius: 30,
+    backgroundColor: '#f6f6f6',
+    height: 380,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 25,
-    overflow: 'hidden',
+    marginBottom: 20,
   },
   mainImage: {
     width: '80%',
@@ -88,82 +90,77 @@ const styles = StyleSheet.create({
     bottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: '#fff',
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingHorizontal: 18,
+    borderRadius: 25,
     gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   arButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1a1a1a',
   },
-  infoRow: {
+  content: {
+    paddingHorizontal: 25,
+  },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 20,
   },
-  titleColumn: {
-    flex: 0.7,
-  },
-  priceColumn: {
-    flex: 0.3,
-    alignItems: 'flex-end',
-  },
-  label: {
+  brandText: {
     fontSize: 12,
-    color: '#1a1a1a',
-    fontWeight: '600',
+    color: '#999',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
     marginBottom: 4,
   },
-  productName: {
-    fontSize: 18,
-    fontWeight: '400',
+  titleText: {
+    fontSize: 22,
+    fontWeight: '500',
     color: '#1a1a1a',
-    lineHeight: 24,
   },
-  price: {
+  priceText: {
     fontSize: 20,
     fontWeight: '700',
     color: '#1a1a1a',
   },
-  stockStatus: {
-    fontSize: 10,
-    color: '#22c55e',
-    fontWeight: 'bold',
-    marginTop: 4,
+  section: {
+    marginBottom: 30,
   },
-  descriptionSection: {
-    marginBottom: 20,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  descriptionText: {
-    fontSize: 14,
+  description: {
+    fontSize: 15,
     color: '#666',
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  specsTable: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 15,
+  specContainer: {
+    backgroundColor: '#fafafa',
+    borderRadius: 15,
+    padding: 20,
   },
   specRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   specKey: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#999',
   },
   specValue: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '600',
     color: '#1a1a1a',
-    fontWeight: '500',
   },
-})
+});
+
+export default Details;
