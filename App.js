@@ -14,6 +14,7 @@ import ARVisualizer from './components/ARVisualizer';
 import Auth from './Pages/Auth';
 import Profile from './Pages/Profile';
 import Wishlist from './Pages/Wishlist';
+import Shop from './Pages/Shop';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -32,6 +33,9 @@ function AtelierStack({ onTryOn }) {
       <Stack.Screen name="Details">
         {(props) => <Details {...props} onTryOn={onTryOn} />}
       </Stack.Screen>
+      <Stack.Screen name='Shop'
+      component={Shop}
+      />
     </Stack.Navigator>
   );
 }

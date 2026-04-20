@@ -37,13 +37,13 @@ const Footer = () => {
           <Text style={[styles.navLabel,{color : isActive('Catalogue') ? activeColor : inactiveColor}]}>Atelier</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => { navigation.navigate("Auth")}}>
+        <TouchableOpacity style={styles.navItem} onPress={() => { navigation.navigate("Shop")}}>
           <ShoppingBag size={22} color={isActive('Shop') ? activeColor : inactiveColor} strokeWidth={isActive('Shop') ? 2.5 : 1.5} />
           <Text style={[styles.navLabel,{color : isActive('Shop') ? activeColor : inactiveColor}]}>Shop</Text>
         </TouchableOpacity>
 
         <View style={styles.centerContainer}>
-          <TouchableOpacity style={styles.arCircle}>
+          <TouchableOpacity style={styles.arCircle} onPress={() => { navigation.navigate("Auth")}}>
             <ScanEye size={24} color="#fff" strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.arLabelText}>Try-On</Text>
