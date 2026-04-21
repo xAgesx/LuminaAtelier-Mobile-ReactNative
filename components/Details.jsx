@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   },
   imageBox: {
     backgroundColor: '#f6f6f6',
-    height: 380,
+    height: 280,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,

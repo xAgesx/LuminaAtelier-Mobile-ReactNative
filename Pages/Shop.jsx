@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,9 @@ import {
   Image, 
   TouchableOpacity, 
   Dimensions,
-  SafeAreaView
+  Modal,
+  ActivityIndicator,
+  Animated
 } from 'react-native';
 import { 
   ShoppingBag, 
@@ -18,15 +20,21 @@ import {
   History, 
   CheckCircle2,
   ArrowRight,
-  Package
+  Package,
+  X,
+  CreditCard,
+  Smartphone,
+  ShieldCheck
 } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function Shop({ navigation }) {
-  const [activeTab, setActiveTab] = useState('bag'); // 'bag' or 'history'
+  const [activeTab, setActiveTab] = useState('bag');
+  const [isCheckoutVisible, setCheckoutVisible] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('idle'); // idle, processing, success
+  const [selectedMethod, setSelectedMethod] = useState('card');
   
-  // Mock Data for the Cart
   const [cartItems, setCartItems] = useState([
     {
       id: '1',
@@ -46,26 +54,28 @@ export default function Shop({ navigation }) {
     }
   ]);
 
-  const history = [
-    {
-      id: 'LUM-99201',
-      date: '14 March 2024',
-      total: '$4,500',
-      status: 'Delivered',
-      items: 1
-    },
-    {
-      id: 'LUM-88122',
-      date: '02 Feb 2024',
-      total: '$2,100',
-      status: 'Delivered',
-      items: 2
-    }
-  ];
-
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const shipping = subtotal > 5000 ? 0 : 50;
   const total = subtotal + shipping;
+
+  const handleCheckout = () => {
+    setCheckoutVisible(true);
+  };
+
+  const processPayment = () => {
+    setPaymentStatus('processing');
+    // Simulate API Call delay
+    setTimeout(() => {
+      setPaymentStatus('success');
+      // After success, clear cart and eventually close
+      setTimeout(() => {
+        setCheckoutVisible(false);
+        setCartItems([]);
+        setPaymentStatus('idle');
+        setActiveTab('history'); // Move to history after purchase
+      }, 2000);
+    }, 2500);
+  };
 
   const updateQty = (id, delta) => {
     setCartItems(prev => prev.map(item => 
@@ -149,7 +159,7 @@ export default function Shop({ navigation }) {
                     <Text style={styles.totalValue}>${total.toLocaleString()}</Text>
                   </View>
 
-                  <TouchableOpacity style={styles.checkoutBtn}>
+                  <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
                     <Text style={styles.checkoutText}>PROCEED TO CHECKOUT</Text>
                     <ArrowRight size={18} color="#fff" />
                   </TouchableOpacity>
@@ -173,28 +183,100 @@ export default function Shop({ navigation }) {
             )}
           </>
         ) : (
-          /* History Section */
           <View style={styles.historySection}>
-            {history.map((order) => (
-              <TouchableOpacity key={order.id} style={styles.historyCard}>
+             <TouchableOpacity style={styles.historyCard}>
                 <View style={styles.historyIcon}>
                   <Package size={24} color="#C5A059" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.historyId}>{order.id}</Text>
-                  <Text style={styles.historyDate}>{order.date} • {order.items} Item(s)</Text>
+                  <Text style={styles.historyId}>LUM-99201</Text>
+                  <Text style={styles.historyDate}>Today • 1 Item(s)</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.historyTotal}>{order.total}</Text>
-                  <Text style={styles.historyStatus}>{order.status}</Text>
+                  <Text style={styles.historyTotal}>$5,000</Text>
+                  <Text style={styles.historyStatus}>Processing</Text>
                 </View>
                 <ChevronRight size={16} color="#cbd5e1" style={{ marginLeft: 10 }} />
               </TouchableOpacity>
-            ))}
           </View>
         )}
         <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* Payment Gateway Modal */}
+      <Modal
+        visible={isCheckoutVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCheckoutVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.paymentSheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Checkout</Text>
+              <TouchableOpacity onPress={() => setCheckoutVisible(false)}>
+                <X size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            {paymentStatus === 'idle' ? (
+              <>
+                <Text style={styles.paymentSubtitle}>Select your preferred payment method</Text>
+                
+                <TouchableOpacity 
+                  style={[styles.methodCard, selectedMethod === 'card' && styles.selectedMethod]} 
+                  onPress={() => setSelectedMethod('card')}
+                >
+                  <View style={styles.methodIcon}><CreditCard size={20} color={selectedMethod === 'card' ? '#C5A059' : '#64748b'} /></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.methodName}>Credit or Debit Card</Text>
+                    <Text style={styles.methodDetail}>Visa, Mastercard, Amex</Text>
+                  </View>
+                  <View style={[styles.radio, selectedMethod === 'card' && styles.radioActive]} />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.methodCard, selectedMethod === 'apple' && styles.selectedMethod]} 
+                  onPress={() => setSelectedMethod('apple')}
+                >
+                  <View style={styles.methodIcon}><Smartphone size={20} color={selectedMethod === 'apple' ? '#C5A059' : '#64748b'} /></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.methodName}>Apple Pay</Text>
+                    <Text style={styles.methodDetail}>Express checkout with TouchID</Text>
+                  </View>
+                  <View style={[styles.radio, selectedMethod === 'apple' && styles.radioActive]} />
+                </TouchableOpacity>
+
+                <View style={styles.paymentTotalBox}>
+                  <View style={styles.totalLabelRow}>
+                    <ShieldCheck size={14} color="#10b981" />
+                    <Text style={styles.secureBadge}>End-to-end encrypted payment</Text>
+                  </View>
+                  <Text style={styles.finalAmount}>Pay ${total.toLocaleString()}</Text>
+                </View>
+
+                <TouchableOpacity style={styles.payNowBtn} onPress={processPayment}>
+                  <Text style={styles.payNowText}>CONFIRM PAYMENT</Text>
+                </TouchableOpacity>
+              </>
+            ) : paymentStatus === 'processing' ? (
+              <View style={styles.statusContainer}>
+                <ActivityIndicator size="large" color="#C5A059" />
+                <Text style={styles.statusText}>Authorizing Transaction...</Text>
+                <Text style={styles.statusSub}>Please do not close the app</Text>
+              </View>
+            ) : (
+              <View style={styles.statusContainer}>
+                <View style={styles.successCircle}>
+                  <CheckCircle2 size={50} color="#fff" />
+                </View>
+                <Text style={styles.statusText}>Order Placed!</Text>
+                <Text style={styles.statusSub}>Your artisan piece is being prepared.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -229,12 +311,7 @@ const styles = StyleSheet.create({
     padding: 15, 
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2
+    borderColor: '#f1f5f9'
   },
   imageContainer: { 
     width: 90, 
@@ -268,11 +345,6 @@ const styles = StyleSheet.create({
     borderRadius: 24, 
     padding: 25, 
     marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   summaryLabel: { color: '#94a3b8', fontSize: 14 },
@@ -292,33 +364,137 @@ const styles = StyleSheet.create({
   },
   checkoutText: { color: '#fff', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
   secureText: { textAlign: 'center', color: '#64748b', fontSize: 11, marginTop: 15 },
-  emptyContainer: { alignItems: 'center', marginTop: 80 },
-  emptyTitle: { fontSize: 20, fontWeight: '600', color: '#1a1a1a', marginTop: 20 },
-  emptySubtitle: { fontSize: 14, color: '#94a3b8', marginTop: 8, textAlign: 'center' },
-  continueBtn: { marginTop: 30, borderWidth: 1, borderColor: '#e2e8f0', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12 },
-  continueText: { fontSize: 12, fontWeight: '700', letterSpacing: 1 },
-  historySection: { marginTop: 10 },
-  historyCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#fff', 
-    padding: 15, 
-    borderRadius: 20, 
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#f1f5f9'
+  
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end'
   },
-  historyIcon: { 
-    width: 45, 
-    height: 45, 
-    backgroundColor: '#fefce8', 
-    borderRadius: 12, 
-    justifyContent: 'center', 
+  paymentSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 25,
+    paddingBottom: 40,
+    minHeight: height * 0.5
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a'
+  },
+  paymentSubtitle: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 20
+  },
+  methodCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    marginBottom: 12,
+    backgroundColor: '#fff'
+  },
+  selectedMethod: {
+    borderColor: '#C5A059',
+    backgroundColor: '#fffcf5'
+  },
+  methodIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#f8fafc',
+    justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15
   },
-  historyId: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
-  historyDate: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
-  historyTotal: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
-  historyStatus: { fontSize: 10, color: '#10b981', fontWeight: '800', textTransform: 'uppercase', marginTop: 2 }
+  methodName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a1a'
+  },
+  methodDetail: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 2
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#cbd5e1'
+  },
+  radioActive: {
+    borderColor: '#C5A059',
+    backgroundColor: '#C5A059'
+  },
+  paymentTotalBox: {
+    marginTop: 20,
+    alignItems: 'center'
+  },
+  totalLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 5
+  },
+  secureBadge: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '600'
+  },
+  finalAmount: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1a1a1a'
+  },
+  payNowBtn: {
+    backgroundColor: '#1a1a1a',
+    height: 55,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 25
+  },
+  payNowText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1
+  },
+  statusContainer: {
+    alignItems: 'center',
+    paddingVertical: 40
+  },
+  statusText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginTop: 20
+  },
+  statusSub: {
+    fontSize: 14,
+    color: '#64748b',
+    marginTop: 8,
+    textAlign: 'center'
+  },
+  successCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center'
+  }
 });
