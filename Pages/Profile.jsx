@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -8,7 +8,8 @@ import {
   TouchableOpacity, 
   Dimensions,
   TextInput,
-  Switch
+  Switch,
+  ActivityIndicator
 } from 'react-native';
 import { 
   User, 
@@ -28,6 +29,8 @@ import {
   Mail,
   Smartphone
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiFetch } from '../api';
 
 const { width } = Dimensions.get('window');
 
@@ -81,45 +84,49 @@ const OrderCard = ({ order }) => (
 );
 
 export default function Profile({ navigation }) {
-  const [view, setView] = useState('profile'); // 'profile', 'orders', 'favorites', 'payments', 'notifications', 'settings'
+  const [view, setView] = useState('profile');
   const [isFaceID, setIsFaceID] = useState(true);
+  const [user, setUser] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
-  const user = {
-    name: 'Julian Vane',
-    email: 'j.vane@lumina-atelier.com',
-    tier: 'Platinum Member',
-    joined: 'October 2023',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200'
-  };
+  useEffect(() => {
+    const loadUser = async () => {
+      const stored = await AsyncStorage.getItem('user');
+      if (stored) setUser(JSON.parse(stored));
+    };
+    loadUser();
+  }, []);
 
-  const orders = [
-    {
-      id: 'LUM-82910',
-      date: 'April 12, 2024',
-      status: 'In Transit',
-      statusColor: '#C5A059',
-      total: '$3,200.00',
-      items: [
-        { name: 'Eternity Band', material: '18k Gold', qty: 1, price: '$3,200', image: 'https://purepng.com/public/uploads/large/purepng.com-gold-diamond-ringdiamond-gold-ringjewelery-1701527122144ayp9p.png' }
-      ]
-    },
-    {
-      id: 'LUM-71204',
-      date: 'Jan 28, 2024',
-      status: 'Delivered',
-      statusColor: '#10b981',
-      total: '$1,800.00',
-      items: [
-        { name: 'Silver Blossom', material: 'Silver', qty: 1, price: '$1,800', image: 'https://purepng.com/public/uploads/large/purepng.com-silver-ringjewelryjewellerybroochesringsnecklacesearringsearringsornamentsflowersdiamondsilverring-1701528881414tgi3w.png' }
-      ]
+  useEffect(() => {
+    if (view === 'orders' && user?._id) {
+      const fetchOrders = async () => {
+        setLoadingOrders(true);
+        const token = await AsyncStorage.getItem('token');
+        const data = await apiFetch('/orders/user/' + user._id, 'GET', null, token);
+        if (data?.data?.orders) {
+          setOrders(data.data.orders.map(o => ({
+            id: o._id.slice(-6).toUpperCase(),
+            date: new Date(o.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            status: o.status,
+            statusColor: o.status === 'Delivered' ? '#10b981' : '#C5A059',
+            total: `$${o.total.toLocaleString()}.00`,
+            items: o.items.map(i => ({ name: i.name, material: i.material, qty: i.qty, price: `$${i.price}`, image: i.image }))
+          })));
+        }
+        setLoadingOrders(false);
+      };
+      fetchOrders();
     }
-  ];
+  }, [view, user]);
 
-  const handleLogout = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Auth' }],
-    });
+
+
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
+    navigation.navigate('Auth');
   };
 
   const renderSubHeader = (title) => (
@@ -140,7 +147,7 @@ export default function Profile({ navigation }) {
             <Clock size={16} color="#94a3b8" />
             <Text style={styles.historyInfoText}>Showing orders from the last 12 months</Text>
           </View>
-          {orders.map((order) => <OrderCard key={order.id} order={order} />)}
+          {loadingOrders ? <ActivityIndicator color="#C5A059" style={{ marginTop: 40 }} /> : orders.map((order) => <OrderCard key={order.id} order={order} />)}
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>

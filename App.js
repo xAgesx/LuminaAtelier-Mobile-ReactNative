@@ -1,10 +1,11 @@
 import 'react-native-gesture-handler';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -26,20 +27,27 @@ function AtelierStack({ onTryOn }) {
         header: (props) => <Header {...props} />,
       }}
     >
-      <Stack.Screen
-        name="Catalogue"
-        component={Catalogue}
-      />
+      <Stack.Screen name="Catalogue" component={Catalogue} />
       <Stack.Screen name="Details">
         {(props) => <Details {...props} onTryOn={onTryOn} />}
       </Stack.Screen>
-
     </Stack.Navigator>
   );
 }
 
 export default function App() {
   const [showAR, setShowAR] = useState(false);
+  const navigationRef = useRef(null);
+
+  useEffect(() => {
+    // On mount, if no token redirect to Auth tab
+    AsyncStorage.getItem('token').then(token => {
+      if (!token && navigationRef.current) {
+        navigationRef.current.navigate('Auth');
+      }
+    });
+  }, []);
+
   if (showAR) {
     return (
       <View style={styles.container}>
@@ -50,50 +58,35 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <View style={styles.container}>
         <Tab.Navigator
           tabBar={(props) => <Footer {...props} onARPress={() => setShowAR(true)} />}
-          screenOptions={{
-            headerShown: false,
-          }}
+          screenOptions={{ headerShown: false }}
         >
           <Tab.Screen name="Catalogue">
             {() => <AtelierStack onTryOn={() => setShowAR(true)} />}
           </Tab.Screen>
 
-          <Tab.Screen
-            name="Auth"
-            component={Auth}
-          />
+          <Tab.Screen name="Auth" component={Auth} />
 
           <Tab.Screen
             name="Wishlist"
             component={Wishlist}
-            options={{
-              headerShown: true,
-              header: (props) => <Header {...props} />
-            }}
+            options={{ headerShown: true, header: (props) => <Header {...props} /> }}
           />
 
           <Tab.Screen
             name="Profile"
             component={Profile}
-            options={{
-              headerShown: true,
-              header: (props) => <Header {...props} />
-            }}
+            options={{ headerShown: true, header: (props) => <Header {...props} /> }}
           />
 
           <Tab.Screen
-            name='Shop'
+            name="Shop"
             component={Shop}
-            options={{
-              headerShown: true,
-              header: (props) => <Header {...props} />
-            }}
+            options={{ headerShown: true, header: (props) => <Header {...props} /> }}
           />
-
         </Tab.Navigator>
 
         <StatusBar style="auto" />
