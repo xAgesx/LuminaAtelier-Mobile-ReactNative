@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,32 +7,86 @@ import {
     Image,
     TouchableOpacity,
     Dimensions,
-    Animated,
-    SafeAreaView
+    SafeAreaView,
+    ActivityIndicator,
+    Alert
 } from 'react-native';
-import { ShoppingBag, Trash2, ArrowRight, Heart, Sparkles, ChevronRight } from 'lucide-react-native';
+import { ShoppingBag, Trash2, ArrowRight, Heart, Sparkles } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiFetch } from '../api'; // Assuming your api wrapper is here
 
 const { width } = Dimensions.get('window');
 
-// Mocking some items that were added to wishlist
-const INITIAL_WISHLIST = [
-    { id: '1', name: 'Eternity Band', price: 3200, material: '18k Gold', image: 'https://purepng.com/public/uploads/large/purepng.com-gold-diamond-ringdiamond-gold-ringjewelery-1701527122144ayp9p.png' },
-    { id: '3', name: 'Sapphire Night', price: 4500, material: 'Platinum', image: 'https://purepng.com/public/uploads/large/purepng.com-gold-diamond-ringdiamond-gold-ringjewelery-1701527122144ayp9p.png' },
-    { id: '6', name: 'Aether Ring', price: 5600, material: '18k White Gold', image: 'https://purepng.com/public/uploads/large/purepng.com-gold-diamond-ringdiamond-gold-ringjewelery-1701527122144ayp9p.png' },
-];
-
 const Wishlist = () => {
     const navigation = useNavigation();
-    const [items, setItems] = useState(INITIAL_WISHLIST);
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
 
-    const removeItem = (id) => {
-        setItems(prev => prev.filter(item => item.id !== id));
+    // 1. Fetch Wishlist on Mount
+    useEffect(() => {
+        fetchWishlist();
+    }, []);
+
+    const fetchWishlist = async () => {
+        setLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('token');
+            // Assuming endpoint is /users/wishlist or /wishlist
+            const response = await apiFetch('/users/wishlist', 'GET', null, token);
+            
+            if (response?.data) {
+                setItems(response.data);
+            }
+        } catch (error) {
+            console.error("Wishlist fetch error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 2. Remove Item from Backend
+    const removeItem = async (id) => {
+        try {
+            const token = await AsyncStorage.getItem('token');
+            const response = await apiFetch(`/users/wishlist/${id}`, 'DELETE', null, token);
+            
+            if (response) {
+                // Update local state for immediate feedback
+                setItems(prev => prev.filter(item => item._id !== id));
+            }
+        } catch (error) {
+            Alert.alert("Error", "Could not remove item. Please try again.");
+        }
+    };
+
+    // 3. Move Item to Cart/Bag
+    const moveToBag = async (product) => {
+        setActionLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('token');
+            
+            // 1. Add to cart
+            await apiFetch('/cart', 'POST', { 
+                productId: product._id,
+                quantity: 1 
+            }, token);
+
+            // 2. Remove from wishlist
+            await removeItem(product._id);
+            
+            Alert.alert("Success", `${product.name} moved to your bag.`);
+        } catch (error) {
+            Alert.alert("Error", "Could not move item to bag.");
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const totalValue = items.reduce((sum, item) => sum + item.price, 0);
 
-    const renderWishlistItem = ({ item, index }) => (
+    const renderWishlistItem = ({ item }) => (
         <View style={styles.card}>
             <TouchableOpacity
                 style={styles.cardContent}
@@ -48,14 +102,18 @@ const Wishlist = () => {
                     <Text style={styles.priceText}>${item.price.toLocaleString()}</Text>
 
                     <View style={styles.cardActions}>
-                        <TouchableOpacity style={styles.addToCartBtn}>
+                        <TouchableOpacity 
+                            style={styles.addToCartBtn} 
+                            onPress={() => moveToBag(item)}
+                            disabled={actionLoading}
+                        >
                             <ShoppingBag size={14} color="#fff" />
-                            <Text style={styles.addToCartText}>Add to Bag</Text>
+                            <Text style={styles.addToCartText}>Move to Bag</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={styles.deleteBtn}
-                            onPress={() => removeItem(item.id)}
+                            onPress={() => removeItem(item._id)}
                         >
                             <Trash2 size={16} color="#94a3b8" />
                         </TouchableOpacity>
@@ -64,6 +122,15 @@ const Wishlist = () => {
             </TouchableOpacity>
         </View>
     );
+
+    if (loading) {
+        return (
+            <View style={styles.centered}>
+                <ActivityIndicator size="large" color="#C5A059" />
+                <Text style={styles.loadingText}>Opening your vault...</Text>
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -82,7 +149,7 @@ const Wishlist = () => {
                     <FlatList
                         data={items}
                         renderItem={renderWishlistItem}
-                        keyExtractor={item => item.id}
+                        keyExtractor={item => item._id}
                         contentContainerStyle={styles.listPadding}
                         showsVerticalScrollIndicator={false}
                     />
@@ -92,7 +159,10 @@ const Wishlist = () => {
                             <Text style={styles.summaryLabel}>Total Value</Text>
                             <Text style={styles.totalAmount}>${totalValue.toLocaleString()}</Text>
                         </View>
-                        <TouchableOpacity style={styles.checkoutBtn}>
+                        <TouchableOpacity 
+                            style={[styles.checkoutBtn, actionLoading && { opacity: 0.7 }]}
+                            onPress={() => Alert.alert("Bulk Action", "Moving all items to your bag...")}
+                        >
                             <Text style={styles.checkoutBtnText}>Move All to Bag</Text>
                             <ArrowRight size={20} color="#fff" />
                         </TouchableOpacity>
@@ -122,6 +192,8 @@ const Wishlist = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 10, color: '#94a3b8', fontSize: 12, letterSpacing: 1 },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -186,7 +258,7 @@ const styles = StyleSheet.create({
 
     footer: {
         position: 'absolute',
-        bottom: 60,
+        bottom: 0,
         left: 0,
         right: 0,
         backgroundColor: '#fff',
