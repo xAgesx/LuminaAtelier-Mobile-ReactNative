@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  Image, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
   Dimensions,
   TextInput,
   Switch,
   ActivityIndicator
 } from 'react-native';
-import { 
-  User, 
-  Package, 
-  Heart, 
-  CreditCard, 
-  Settings, 
-  ChevronRight, 
-  LogOut, 
+import {
+  User,
+  Package,
+  Heart,
+  CreditCard,
+  Settings,
+  ChevronRight,
+  LogOut,
   ShieldCheck,
   Bell,
   Clock,
@@ -26,8 +26,7 @@ import {
   Trash2,
   CheckCircle2,
   Lock,
-  Mail,
-  Smartphone
+  Mail
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from '../api';
@@ -35,8 +34,8 @@ import { apiFetch } from '../api';
 const { width } = Dimensions.get('window');
 
 const ProfileOption = ({ icon: Icon, title, subtitle, onPress, isLast }) => (
-  <TouchableOpacity 
-    style={[styles.optionRow, isLast && { borderBottomWidth: 0 }]} 
+  <TouchableOpacity
+    style={[styles.optionRow, isLast && { borderBottomWidth: 0 }]}
     onPress={onPress}
     activeOpacity={0.7}
   >
@@ -62,7 +61,7 @@ const OrderCard = ({ order }) => (
         <Text style={[styles.statusText, { color: order.statusColor }]}>{order.status}</Text>
       </View>
     </View>
-    
+
     <View style={styles.orderItems}>
       {order.items.map((item, index) => (
         <View key={index} style={styles.orderItemRow}>
@@ -75,7 +74,7 @@ const OrderCard = ({ order }) => (
         </View>
       ))}
     </View>
-    
+
     <View style={styles.orderFooter}>
       <Text style={styles.totalLabel}>Total Amount</Text>
       <Text style={styles.totalAmount}>{order.total}</Text>
@@ -87,13 +86,25 @@ export default function Profile({ navigation }) {
   const [view, setView] = useState('profile');
   const [isFaceID, setIsFaceID] = useState(true);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // Added to prevent null crashes
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
-      const stored = await AsyncStorage.getItem('user');
-      if (stored) setUser(JSON.parse(stored));
+      try {
+        const stored = await AsyncStorage.getItem('user');
+        if (stored) {
+          setUser(JSON.parse(stored));
+        } else {
+          // If no user is found, redirect to Login
+          navigation.replace('Auth');
+        }
+      } catch (e) {
+        console.error("Failed to load user", e);
+      } finally {
+        setLoading(false);
+      }
     };
     loadUser();
   }, []);
@@ -102,31 +113,33 @@ export default function Profile({ navigation }) {
     if (view === 'orders' && user?._id) {
       const fetchOrders = async () => {
         setLoadingOrders(true);
-        const token = await AsyncStorage.getItem('token');
-        const data = await apiFetch('/orders/user/' + user._id, 'GET', null, token);
-        if (data?.data?.orders) {
-          setOrders(data.data.orders.map(o => ({
-            id: o._id.slice(-6).toUpperCase(),
-            date: new Date(o.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-            status: o.status,
-            statusColor: o.status === 'Delivered' ? '#10b981' : '#C5A059',
-            total: `$${o.total.toLocaleString()}.00`,
-            items: o.items.map(i => ({ name: i.name, material: i.material, qty: i.qty, price: `$${i.price}`, image: i.image }))
-          })));
+        try {
+          const token = await AsyncStorage.getItem('token');
+          const data = await apiFetch('/orders/user/' + user._id, 'GET', null, token);
+          if (data?.data?.orders) {
+            setOrders(data.data.orders.map(o => ({
+              id: o._id.slice(-6).toUpperCase(),
+              date: new Date(o.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+              status: o.status,
+              statusColor: o.status === 'Delivered' ? '#10b981' : '#C5A059',
+              total: `$${o.total.toLocaleString()}.00`,
+              items: o.items.map(i => ({ name: i.name, material: i.material, qty: i.qty, price: `$${i.price}`, image: i.image }))
+            })));
+          }
+        } catch (e) {
+          console.error("Error fetching orders", e);
+        } finally {
+          setLoadingOrders(false);
         }
-        setLoadingOrders(false);
       };
       fetchOrders();
     }
   }, [view, user]);
 
-
-
-
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
-    navigation.navigate('Auth');
+    navigation.replace('Auth');
   };
 
   const renderSubHeader = (title) => (
@@ -138,6 +151,18 @@ export default function Profile({ navigation }) {
     </View>
   );
 
+  // 1. Initial Loading Screen
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#C5A059" />
+      </View>
+    );
+  }
+
+  // 2. Safety check: If user failed to load
+  if (!user) return null;
+
   if (view === 'orders') {
     return (
       <View style={styles.container}>
@@ -147,7 +172,13 @@ export default function Profile({ navigation }) {
             <Clock size={16} color="#94a3b8" />
             <Text style={styles.historyInfoText}>Showing orders from the last 12 months</Text>
           </View>
-          {loadingOrders ? <ActivityIndicator color="#C5A059" style={{ marginTop: 40 }} /> : orders.map((order) => <OrderCard key={order.id} order={order} />)}
+          {loadingOrders ? (
+            <ActivityIndicator color="#C5A059" style={{ marginTop: 40 }} />
+          ) : orders.length > 0 ? (
+            orders.map((order) => <OrderCard key={order.id} order={order} />)
+          ) : (
+            <Text style={{ textAlign: 'center', color: '#94a3b8', marginTop: 40 }}>No orders found.</Text>
+          )}
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>
@@ -162,9 +193,9 @@ export default function Profile({ navigation }) {
           <View style={styles.favoritesGrid}>
             {[1, 2, 3].map((item) => (
               <View key={item} style={styles.favItem}>
-                <Image 
-                  source={{ uri: 'https://purepng.com/public/uploads/large/purepng.com-gold-diamond-ringdiamond-gold-ringjewelery-1701527122144ayp9p.png' }} 
-                  style={styles.favImage} 
+                <Image
+                  source={{ uri: 'https://purepng.com/public/uploads/large/purepng.com-gold-diamond-ringdiamond-gold-ringjewelery-1701527122144ayp9p.png' }}
+                  style={styles.favImage}
                 />
                 <Text style={styles.favName}>Celestial Ring {item}</Text>
                 <Text style={styles.favPrice}>$2,400</Text>
@@ -236,7 +267,7 @@ export default function Profile({ navigation }) {
             <Text style={styles.inputLabel}>Full Name</Text>
             <View style={styles.inputWrapper}>
               <User size={18} color="#94a3b8" />
-              <TextInput style={styles.settingsInput} defaultValue={user.name} />
+              <TextInput style={styles.settingsInput} defaultValue={user?.name} />
             </View>
           </View>
 
@@ -244,7 +275,7 @@ export default function Profile({ navigation }) {
             <Text style={styles.inputLabel}>Email Address</Text>
             <View style={styles.inputWrapper}>
               <Mail size={18} color="#94a3b8" />
-              <TextInput style={styles.settingsInput} defaultValue={user.email} />
+              <TextInput style={styles.settingsInput} defaultValue={user?.email} />
             </View>
           </View>
 
@@ -254,9 +285,9 @@ export default function Profile({ navigation }) {
               <Text style={styles.toggleTitle}>Face ID / Biometrics</Text>
               <Text style={styles.toggleSubtitle}>Secure your vault access</Text>
             </View>
-            <Switch 
-              value={isFaceID} 
-              onValueChange={setIsFaceID} 
+            <Switch
+              value={isFaceID}
+              onValueChange={setIsFaceID}
               trackColor={{ false: '#e2e8f0', true: '#1a1a1a' }}
             />
           </View>
@@ -284,17 +315,20 @@ export default function Profile({ navigation }) {
       {/* Profile Header */}
       <View style={styles.header}>
         <View style={styles.avatarWrapper}>
-          <Image source={{ uri: user.avatar }} style={styles.avatar} />
+          <Image
+            source={{ uri: user?.avatar || 'https://via.placeholder.com/100' }}
+            style={styles.avatar}
+          />
           <View style={styles.editBadge}>
             <Settings size={12} color="#fff" />
           </View>
         </View>
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
-        
+        <Text style={styles.userName}>{user?.name || 'Valued Member'}</Text>
+        <Text style={styles.userEmail}>{user?.email}</Text>
+
         <View style={styles.tierBadge}>
           <ShieldCheck size={14} color="#C5A059" />
-          <Text style={styles.tierText}>{user.tier.toUpperCase()}</Text>
+          <Text style={styles.tierText}>{(user?.tier || 'Atelier Member').toUpperCase()}</Text>
         </View>
       </View>
 
@@ -320,24 +354,24 @@ export default function Profile({ navigation }) {
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Shopping Activity</Text>
         <View style={styles.menuCard}>
-          <ProfileOption 
-            icon={Package} 
-            title="Order History" 
-            subtitle="Track and manage your orders" 
+          <ProfileOption
+            icon={Package}
+            title="Order History"
+            subtitle="Track and manage your orders"
             onPress={() => setView('orders')}
           />
-          <ProfileOption 
-            icon={Heart} 
-            title="My Favorites" 
-            subtitle="8 items saved for later" 
+          <ProfileOption
+            icon={Heart}
+            title="My Favorites"
+            subtitle="8 items saved for later"
             onPress={() => setView('favorites')}
           />
-          <ProfileOption 
-            icon={CreditCard} 
-            title="Payment Methods" 
-            subtitle="Visa •••• 4242" 
+          <ProfileOption
+            icon={CreditCard}
+            title="Payment Methods"
+            subtitle="Visa •••• 4242"
             onPress={() => setView('payments')}
-            isLast 
+            isLast
           />
         </View>
       </View>
@@ -345,18 +379,18 @@ export default function Profile({ navigation }) {
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Preferences</Text>
         <View style={styles.menuCard}>
-          <ProfileOption 
-            icon={Bell} 
-            title="Notifications" 
-            subtitle="Alerts on new collections" 
+          <ProfileOption
+            icon={Bell}
+            title="Notifications"
+            subtitle="Alerts on new collections"
             onPress={() => setView('notifications')}
           />
-          <ProfileOption 
-            icon={Settings} 
-            title="Account Settings" 
-            subtitle="Privacy and data management" 
+          <ProfileOption
+            icon={Settings}
+            title="Account Settings"
+            subtitle="Privacy and data management"
             onPress={() => setView('settings')}
-            isLast 
+            isLast
           />
         </View>
       </View>
@@ -376,7 +410,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { alignItems: 'center', paddingTop: 20, paddingBottom: 30 },
   avatarWrapper: { position: 'relative', marginBottom: 15 },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
+  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#f1f5f9' },
   editBadge: {
     position: 'absolute',
     bottom: 0,
@@ -418,11 +452,11 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 11, color: '#64748b', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
   statDivider: { width: 1, height: '100%', backgroundColor: '#e2e8f0' },
   section: { paddingHorizontal: 20, marginBottom: 25 },
-  sectionHeader: { 
-    fontSize: 12, 
-    fontWeight: '800', 
-    color: '#94a3b8', 
-    textTransform: 'uppercase', 
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 12,
     marginLeft: 5
@@ -473,8 +507,7 @@ const styles = StyleSheet.create({
   },
   logoutText: { color: '#ef4444', fontWeight: '700', fontSize: 14 },
   versionText: { textAlign: 'center', fontSize: 10, color: '#cbd5e1', marginTop: 30, letterSpacing: 1 },
-  
-  // Vault / Sub-Screen Styles
+
   screenHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -518,7 +551,6 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: 13, color: '#64748b' },
   totalAmount: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
 
-  // Settings Specific Styles
   settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 15 },
   inputGroup: { marginBottom: 20 },
   inputLabel: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 8 },
@@ -535,7 +567,6 @@ const styles = StyleSheet.create({
   deleteAccountBtn: { marginTop: 30, alignItems: 'center' },
   deleteAccountText: { color: '#94a3b8', fontSize: 12, textDecorationLine: 'underline' },
 
-  // Favorites Grid
   favoritesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15 },
   favItem: { width: (width - 55) / 2, backgroundColor: '#f8fafc', padding: 15, borderRadius: 20, alignItems: 'center', position: 'relative' },
   favImage: { width: 80, height: 80, marginBottom: 10 },
@@ -543,7 +574,6 @@ const styles = StyleSheet.create({
   favPrice: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
   favRemove: { position: 'absolute', top: 10, right: 10 },
 
-  // Payments
   cardItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 20, borderRadius: 20, marginBottom: 15 },
   cardBrand: { width: 45, height: 30, backgroundColor: '#1a1a1a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
   cardBrandText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
@@ -553,7 +583,6 @@ const styles = StyleSheet.create({
   addCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 20, borderRadius: 20, borderStyle: 'dashed', borderWidth: 1, borderColor: '#cbd5e1', gap: 10 },
   addCardText: { color: '#64748b', fontWeight: '600' },
 
-  // Notifications
   notifItem: { flexDirection: 'row', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   notifDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#C5A059', marginTop: 6, marginRight: 12 },
   notifTitle: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
