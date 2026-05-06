@@ -1,0 +1,69 @@
+# LuminaAtelier Project Summary
+
+## Overview
+LuminaAtelier is a React Native mobile application built with Expo that combines e-commerce functionality with AR (Augmented Reality) visualization capabilities. The project includes both a frontend mobile app and an Express/MongoDB backend.
+
+## Technology Stack
+
+### Frontend
+- React Native 0.81.5 with Expo 54
+- React Navigation (bottom tabs, native stack)
+- Three.js / expo-three for AR visualization
+- AsyncStorage for local data persistence
+- Axios for API calls
+- JWT for authentication
+
+### Backend
+- Express.js server
+- MongoDB with Mongoose ODM
+- JWT authentication with bcryptjs
+- Node.js with nodemon
+
+## Project Structure
+
+```
+LuminaAtelier/
+├── App.js                 # Main app entry point
+├── api.js                # API configuration
+├── components/           # Reusable UI components
+│   ├── ARVisualizer.jsx  # AR try-on feature
+│   ├── Catalogue.jsx     # Product catalogue
+│   ├── Details.jsx       # Product details view
+│   ├── Footer.jsx         # Bottom tab bar
+│   ├── Header.jsx         # Navigation header
+│   └── Search.jsx        # Search functionality
+├── Pages/                # App screens
+│   ├── Auth.jsx          # Authentication
+│   ├── Profile.jsx       # User profile
+│   ├── Shop.jsx          # Shopping page
+│   └── Wishlist.jsx      # User wishlist
+├── LuminaBackend/        # Express backend
+│   ├── controllers/      # Route controllers
+│   ├── models/           # Mongoose models
+│   ├── routes/           # API routes
+│   └── middlewares/      # Auth middleware
+├── assets/               # Images and icons
+└── android/              # Android build files
+```
+
+## Key Features
+
+1. **Product Catalogue** - Browse products with search functionality
+2. **AR Visualizer** - Try on products using augmented reality (Three.js)
+3. **User Authentication** - Login/signup with JWT tokens
+4. **Wishlist** - Save favorite products
+5. **Profile** - User account management
+6. **Shop** - E-commerce shopping interface
+7. **Bottom Tab Navigation** - Easy access to main features
+
+## App Screens
+- Catalogue (with Details)
+- Auth (Login/Register)
+- Wishlist
+- Profile
+- Shop
+
+## Configuration
+- Package: com.anonymous.LuminaAtelier
+- Version: 1.0.0
+- Platform: iOS and Android support
