@@ -5,6 +5,7 @@ const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const cartRoutes = require("./routes/cartRoutes");
 
 const app = express();
 const PORT = 4040;
@@ -14,6 +15,7 @@ app.use("/users", userRoutes);
 app.use("/products", productRoutes);
 app.use("/wishlist", wishlistRoutes);
 app.use("/orders", orderRoutes);
+app.use("/cart", cartRoutes);
 
 dotenv.config({ path: "./.env" });
 mongoose

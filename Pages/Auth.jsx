@@ -8,9 +8,12 @@ import { Gem, ArrowRight, Fingerprint, CheckCircle2, AlertCircle } from 'lucide-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from '../api';
 
+console.log("📝 Auth.jsx loading");
+
 const { width, height } = Dimensions.get('window');
 
-export default function Auth({ navigation }) {
+export default function Auth({ navigation, onLogin }) {
+  console.log("📝 Auth component rendering");
   const [activeTab, setActiveTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,14 +63,18 @@ export default function Auth({ navigation }) {
       if (data?.data?.token) {
         await AsyncStorage.setItem('token', data.data.token);
         await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
-        navigation.navigate('Catalogue');
+        if (onLogin) {
+          onLogin(data.data.token, data.data.user);
+        } else {
+          navigation.navigate('Catalogue');
+        }
       } else {
         setError(data?.message || 'Something went wrong. Please try again.');
       }
     } catch (e) {
-      Debug.log(e)
-      setError('Could not connect to server. Check your connection.');
-    } finally {
+        console.log("📝 Auth error:", e);
+        setError('Could not connect to server. Check your connection.');
+      } finally {
       setLoading(false);
     }
   };
@@ -232,7 +239,13 @@ export default function Auth({ navigation }) {
               )}
             </View>
 
-            <TouchableOpacity style={styles.guestLink} onPress={() => navigation.navigate('Catalogue')}>
+            <TouchableOpacity style={styles.guestLink} onPress={() => {
+              if (onGuest) {
+                onGuest();
+              } else {
+                navigation.navigate('Catalogue');
+              }
+            }}>
               <Text style={styles.guestText}>Continue as Guest</Text>
             </TouchableOpacity>
 

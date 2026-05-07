@@ -14,6 +14,7 @@ import { apiFetch } from '../api';
 const { width, height } = Dimensions.get('window');
 
 export default function Shop({ navigation }) {
+  console.log("🛒 Shop component rendering");
   const [activeTab, setActiveTab] = useState('bag');
   const [isCheckoutVisible, setCheckoutVisible] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('idle');
@@ -25,31 +26,35 @@ export default function Shop({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      console.log("🛒 Shop useFocusEffect triggered, tab:", activeTab);
       loadShopData();
     }, [activeTab])
   );
 
   const loadShopData = async () => {
+    console.log("🛒 loadShopData called, activeTab:", activeTab);
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
+      console.log("🛒 Token:", token ? "exists" : "null");
       const user = JSON.parse(await AsyncStorage.getItem('user'));
+      console.log("🛒 User:", user);
 
       if (activeTab === 'bag') {
         const res = await apiFetch('/cart', 'GET', null, token);
-        console.log("1. BAG DATA:", res);
+        console.log("🛒 BAG DATA:", res);
         
         // Safety check to ensure we always set an array
-        const fetchedItems = res?.data || res || [];
+        const fetchedItems = res?.data?.products || res?.data || res || [];
         setCartItems(Array.isArray(fetchedItems) ? fetchedItems : []);
       } else {
-        const res = await apiFetch(`/orders/user/${user._id}`, 'GET', null, token);
-        console.log("2. HISTORY DATA:", res);
+        const res = await apiFetch('/orders', 'GET', null, token);
+        console.log("🛒 HISTORY DATA:", res);
         const fetchedOrders = res?.data?.orders || res?.orders || res || [];
         setOrderHistory(Array.isArray(fetchedOrders) ? fetchedOrders : []);
       }
     } catch (e) {
-      console.log("LOAD ERROR:", e);
+      console.log("🛒 LOAD ERROR:", e);
       setCartItems([]);
     } finally {
       setLoading(false);

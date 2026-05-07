@@ -19,6 +19,7 @@ import { apiFetch } from '../api'; // Assuming your api wrapper is here
 const { width } = Dimensions.get('window');
 
 const Wishlist = () => {
+    console.log("💚 Wishlist component rendering");
     const navigation = useNavigation();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ const Wishlist = () => {
 
     // 1. Fetch Wishlist on Mount
     useEffect(() => {
+        console.log("💚 Wishlist useEffect triggered");
         fetchWishlist();
     }, []);
 
@@ -33,14 +35,14 @@ const Wishlist = () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('token');
-            // Assuming endpoint is /users/wishlist or /wishlist
-            const response = await apiFetch('/users/wishlist', 'GET', null, token);
+            const response = await apiFetch('/wishlist', 'GET', null, token);
             
-            if (response?.data) {
-                setItems(response.data);
+            if (response?.data?.products) {
+                setItems(response.data.products);
             }
         } catch (error) {
             console.error("Wishlist fetch error:", error);
+            setItems([]);
         } finally {
             setLoading(false);
         }
@@ -50,10 +52,9 @@ const Wishlist = () => {
     const removeItem = async (id) => {
         try {
             const token = await AsyncStorage.getItem('token');
-            const response = await apiFetch(`/users/wishlist/${id}`, 'DELETE', null, token);
+            const response = await apiFetch('/wishlist/remove', 'POST', { productId: id }, token);
             
             if (response) {
-                // Update local state for immediate feedback
                 setItems(prev => prev.filter(item => item._id !== id));
             }
         } catch (error) {
@@ -68,7 +69,7 @@ const Wishlist = () => {
             const token = await AsyncStorage.getItem('token');
             
             // 1. Add to cart
-            await apiFetch('/cart', 'POST', { 
+            await apiFetch('/cart/add', 'POST', { 
                 productId: product._id,
                 quantity: 1 
             }, token);

@@ -12,6 +12,7 @@ import { apiFetch } from '../api';
 const { width, height } = Dimensions.get('window');
 
 const Catalogue = () => {
+  console.log("📦 Catalogue component rendering");
   const navigation = useNavigation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,12 +34,17 @@ const Catalogue = () => {
   const materials = ['All', '18k Gold', 'Silver', 'Platinum', 'Rose Gold', 'Steel'];
 
   const loadData = async () => {
+    console.log("📦 loadData called");
     try {
       const token = await AsyncStorage.getItem('token');
+      console.log("📦 Token:", token ? "exists" : "null");
       const [productRes, wishlistRes] = await Promise.all([
         apiFetch('/products', 'GET'),
-        token ? apiFetch('/users/wishlist', 'GET', null, token) : Promise.resolve(null)
+        token ? apiFetch('/wishlist', 'GET', null, token) : Promise.resolve(null)
       ]);
+
+      console.log("📦 Products response:", productRes);
+      console.log("📦 Wishlist response:", wishlistRes);
 
       let rawProducts = productRes?.data || productRes || [];
       if (rawProducts && typeof rawProducts === 'object' && !Array.isArray(rawProducts)) {
@@ -46,13 +52,12 @@ const Catalogue = () => {
       }
       setProducts(Array.isArray(rawProducts) ? rawProducts : []);
 
-      if (wishlistRes) {
-        const wData = wishlistRes.data || wishlistRes || [];
-        if (Array.isArray(wData)) {
-          setWishlistIds(wData.map(item => item._id || item.id || (item.product && item.product._id) || item));
-        }
+      if (wishlistRes?.data?.products) {
+        const wData = wishlistRes.data.products;
+        setWishlistIds(wData.map(item => item._id));
       }
     } catch (e) {
+      console.log("📦 loadData error:", e);
       setProducts([]);
     } finally {
       setLoading(false);
@@ -85,10 +90,9 @@ const Catalogue = () => {
     try {
       let res;
       if (isFav) {
-        res = await apiFetch(`/wishlist/${productId}`, 'DELETE', null, token);
+        res = await apiFetch('/wishlist/remove', 'POST', { productId }, token);
       } else {
-        // Change { productId } to { id: productId } if your backend expects 'id'
-        res = await apiFetch('/wishlist', 'POST', { productId }, token);
+        res = await apiFetch('/wishlist/add', 'POST', { productId }, token);
       }
       console.log("Wishlist Server Response:", res);
     } catch (e) {

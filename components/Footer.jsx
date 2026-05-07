@@ -5,7 +5,7 @@ import { useNavigation, useNavigationState } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
-const Footer = () => {
+const Footer = ({ isGuest = false, onARPress }) => {
   const navigation = useNavigation();
   
   const currentRouteName = useNavigationState((state) => {
@@ -71,40 +71,72 @@ const Footer = () => {
         <View style={styles.centerContainer}>
           <TouchableOpacity 
             style={styles.arCircle} 
-            onPress={() => navigation.navigate("Auth")}
+            onPress={() => onARPress ? onARPress() : navigation.navigate("Auth")}
           >
             <ScanEye size={24} color="#fff" strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.arLabelText}>Try-On</Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => navigation.navigate("Wishlist")}
-        >
-          <Heart 
-            size={22} 
-            color={isActive('Wishlist') ? activeColor : inactiveColor} 
-            strokeWidth={isActive('Wishlist') ? 2.5 : 1.5} 
-          />
-          <Text style={[styles.navLabel, { color: isActive('Wishlist') ? activeColor : inactiveColor }]}>
-            Wishlist
-          </Text>
-        </TouchableOpacity>
+        {isGuest ? (
+          <TouchableOpacity 
+            style={styles.navItem} 
+            onPress={() => {}}
+          >
+            <Heart 
+              size={22} 
+              color={inactiveColor} 
+              strokeWidth={1.5} 
+            />
+            <Text style={[styles.navLabel, { color: inactiveColor }]}>
+              Wishlist
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={styles.navItem} 
+            onPress={() => navigation.navigate("Wishlist")}
+          >
+            <Heart 
+              size={22} 
+              color={isActive('Wishlist') ? activeColor : inactiveColor} 
+              strokeWidth={isActive('Wishlist') ? 2.5 : 1.5} 
+            />
+            <Text style={[styles.navLabel, { color: isActive('Wishlist') ? activeColor : inactiveColor }]}>
+              Wishlist
+            </Text>
+          </TouchableOpacity>
+        )}
 
-        <TouchableOpacity 
-          style={styles.navItem} 
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <User 
-            size={22} 
-            color={isActive('Profile') ? activeColor : inactiveColor} 
-            strokeWidth={isActive('Profile') ? 2.5 : 1.5} 
-          />
-          <Text style={[styles.navLabel, { color: isActive('Profile') ? activeColor : inactiveColor }]}>
-            Profile
-          </Text>
-        </TouchableOpacity>
+        {isGuest ? (
+          <TouchableOpacity 
+            style={styles.navItem} 
+            onPress={() => {}}
+          >
+            <User 
+              size={22} 
+              color={inactiveColor} 
+              strokeWidth={1.5} 
+            />
+            <Text style={[styles.navLabel, { color: inactiveColor }]}>
+              Profile
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={styles.navItem} 
+            onPress={() => navigation.navigate("Profile")}
+          >
+            <User 
+              size={22} 
+              color={isActive('Profile') ? activeColor : inactiveColor} 
+              strokeWidth={isActive('Profile') ? 2.5 : 1.5} 
+            />
+            <Text style={[styles.navLabel, { color: isActive('Profile') ? activeColor : inactiveColor }]}>
+              Profile
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
