@@ -33,18 +33,31 @@ const Catalogue = () => {
 
   const materials = ['All', '18k Gold', 'Silver', 'Platinum', 'Rose Gold', 'Steel'];
 
-  const loadData = async () => {
-    console.log("📦 loadData called");
+  const getToken = async () => {
+    const tokenData = await AsyncStorage.getItem('token');
+    if (!tokenData) return null;
     try {
-      const token = await AsyncStorage.getItem('token');
-      console.log("📦 Token:", token ? "exists" : "null");
+      const parsed = JSON.parse(tokenData);
+      const now = new Date().getTime();
+      if (parsed.expiry && now > parsed.expiry) return null;
+      return parsed.token;
+    } catch (e) {
+      return tokenData;
+    }
+  };
+
+  const loadData = async () => {
+    console.log("loadData called");
+    try {
+      const token = await getToken();
+      console.log("Token:", token ? "exists" : "null");
       const [productRes, wishlistRes] = await Promise.all([
         apiFetch('/products', 'GET'),
         token ? apiFetch('/wishlist', 'GET', null, token) : Promise.resolve(null)
       ]);
 
-      console.log("📦 Products response:", productRes);
-      console.log("📦 Wishlist response:", wishlistRes);
+      console.log("Products response:", productRes);
+      console.log("Wishlist response:", wishlistRes);
 
       let rawProducts = productRes?.data || productRes || [];
       if (rawProducts && typeof rawProducts === 'object' && !Array.isArray(rawProducts)) {
@@ -54,10 +67,14 @@ const Catalogue = () => {
 
       if (wishlistRes?.data?.products) {
         const wData = wishlistRes.data.products;
-        setWishlistIds(wData.map(item => item._id));
+        const newWishlistIds = wData.map(item => item._id);
+        console.log("Setting wishlistIds:", newWishlistIds);
+        setWishlistIds(newWishlistIds);
+      } else {
+        console.log("No products in wishlist response");
       }
     } catch (e) {
-      console.log("📦 loadData error:", e);
+      console.log("loadData error:", e);
       setProducts([]);
     } finally {
       setLoading(false);
@@ -66,27 +83,35 @@ const Catalogue = () => {
 
   useFocusEffect(
     useCallback(() => {
+      console.log("Catalogue focus - refetching products and wishlist");
       loadData();
     }, [])
   );
 
   const toggleWishlist = async (product) => {
     const productId = product._id;
+    console.log("toggleWishlist called, productId:", productId);
+    
     if (!productId) {
       console.log("CRITICAL ERROR: This product has no _id", product);
       return;
     }
 
     const isFav = wishlistIds.includes(productId);
+    console.log("isFav:", isFav);
+    
     const tokenData = await AsyncStorage.getItem('token');
+    console.log("tokenData:", tokenData ? "exists" : "null");
     let token = null;
 
     if (tokenData) {
       try {
         const parsed = JSON.parse(tokenData);
         token = parsed.token;
+        console.log("token extracted:", token ? "yes" : "no");
         const now = new Date().getTime();
         if (parsed.expiry && now > parsed.expiry) {
+          console.log("token expired");
           token = null;
         }
       } catch (e) {
@@ -95,6 +120,7 @@ const Catalogue = () => {
     }
 
     if (!token) {
+      console.log("No token, showing alert");
       Alert.alert("Membership Required", "Please log in.");
       return;
     }
@@ -102,13 +128,17 @@ const Catalogue = () => {
     setWishlistIds(prev => isFav ? prev.filter(id => id !== productId) : [...prev, productId]);
 
     try {
+      console.log("Calling API with token:", token.substring(0, 20) + "...");
       let res;
       if (isFav) {
         res = await apiFetch('/wishlist/remove', 'POST', { productId }, token);
       } else {
         res = await apiFetch('/wishlist/add', 'POST', { productId }, token);
       }
-      console.log("Wishlist Server Response:", res);
+      console.log("Wishlist API Response:", res);
+      if (res?.error) {
+        console.log("API Error:", res.error);
+      }
     } catch (e) {
       console.log("WISHLIST API ERROR:", e);
       setWishlistIds(prev => isFav ? [...prev, productId] : prev.filter(id => id !== productId));

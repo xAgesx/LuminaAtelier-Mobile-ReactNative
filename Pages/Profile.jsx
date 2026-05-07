@@ -163,7 +163,7 @@ const handleLogout = async () => {
     </View>
   );
 
-  // 1. Initial Loading Screen
+  // loading first time
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -172,7 +172,6 @@ const handleLogout = async () => {
     );
   }
 
-  // 2. Safety check: If user failed to load
   if (!user) return null;
 
   if (view === 'orders') {

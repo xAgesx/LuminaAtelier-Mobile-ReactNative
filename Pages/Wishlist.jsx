@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -12,24 +12,26 @@ import {
     Alert
 } from 'react-native';
 import { ShoppingBag, Trash2, ArrowRight, Heart, Sparkles } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiFetch } from '../api'; // Assuming your api wrapper is here
+import { apiFetch } from '../api';
 
 const { width } = Dimensions.get('window');
 
 const Wishlist = () => {
-    console.log("💚 Wishlist component rendering");
+    console.log("Wishlist component rendering");
     const navigation = useNavigation();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
-    // 1. Fetch Wishlist on Mount
-    useEffect(() => {
-        console.log("💚 Wishlist useEffect triggered");
-        fetchWishlist();
-    }, []);
+    // Fetch Wishlist every time screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            console.log("Wishlist focus triggered - fetching fresh data");
+            fetchWishlist();
+        }, [])
+    );
 
     const getToken = async () => {
         const tokenData = await AsyncStorage.getItem('token');

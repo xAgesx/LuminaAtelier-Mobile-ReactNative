@@ -14,7 +14,7 @@ import { apiFetch } from '../api';
 const { width, height } = Dimensions.get('window');
 
 export default function Shop({ navigation }) {
-  console.log("🛒 Shop component rendering");
+  console.log("Shop component rendering");
   const [activeTab, setActiveTab] = useState('bag');
   const [isCheckoutVisible, setCheckoutVisible] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('idle');
@@ -105,7 +105,7 @@ export default function Shop({ navigation }) {
     }
   };
 
-  // --- SAFE REDUCE CALCULATION ---
+  // SAFE REDUCE CALCULATION
   const subtotal = (cartItems || []).reduce((acc, item) => {
     const price = item.productId?.price || 0;
     const qty = item.quantity || 0;
