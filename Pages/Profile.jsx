@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,9 @@ import {
   Dimensions,
   TextInput,
   Switch,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl,
+  Alert
 } from 'react-native';
 import {
   User,
@@ -26,7 +28,8 @@ import {
   Trash2,
   CheckCircle2,
   Lock,
-  Mail
+  Mail,
+  X
 } from 'lucide-react-native';
 import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -87,16 +90,64 @@ export default function Profile({ navigation, onLogout }) {
   const [view, setView] = useState('profile');
   const [isFaceID, setIsFaceID] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [orderCount, setOrderCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [favorites, setFavorites] = useState([]);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+
+  const fetchStats = useCallback(async () => {
+    if (!token) return;
+    try {
+      const [orderRes, wishlistRes] = await Promise.all([
+        apiFetch('/orders', 'GET', null, token),
+        apiFetch('/wishlist', 'GET', null, token)
+      ]);
+      
+      const orderData = orderRes?.data?.orders || orderRes?.orders || [];
+      setOrderCount(orderData.length);
+      
+      const wishlistData = wishlistRes?.data?.products || wishlistRes?.products || [];
+      setWishlistCount(wishlistData.length);
+    } catch (e) {
+      console.log("Stats fetch error:", e);
+    }
+  }, [token]);
+
+  const fetchFavorites = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await apiFetch('/wishlist', 'GET', null, token);
+      const items = res?.data?.products || res?.products || [];
+      setFavorites(items.map(item => ({
+        id: item._id,
+        name: item.name,
+        price: item.price,
+        image: item.image
+      })));
+    } catch (e) {
+      console.log("Favorites fetch error:", e);
+    }
+  }, [token]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchStats(), fetchFavorites()]);
+    setRefreshing(false);
+  }, [fetchStats, fetchFavorites]);
 
   useEffect(() => {
     if (user) {
       setLoading(false);
+      fetchStats();
+      fetchFavorites();
     } else if (!token) {
       navigation.replace('Auth');
     }
-  }, [user, token]);
+  }, [user, token, fetchStats, fetchFavorites]);
 
   useEffect(() => {
     if (view === 'orders' && user?._id) {
@@ -122,7 +173,7 @@ export default function Profile({ navigation, onLogout }) {
       };
       fetchOrders();
     }
-  }, [view, user]);
+  }, [view, user, token]);
 
 const handleLogout = async () => {
     console.log("👤 Profile: Logout clicked");
@@ -183,21 +234,36 @@ const handleLogout = async () => {
       <View style={styles.container}>
         {renderSubHeader('My Favorites')}
         <ScrollView contentContainerStyle={styles.orderList}>
-          <View style={styles.favoritesGrid}>
-            {[1, 2, 3].map((item) => (
-              <View key={item} style={styles.favItem}>
-                <Image
-                  source={{ uri: 'https://purepng.com/public/uploads/large/purepng.com-gold-diamond-ringdiamond-gold-ringjewelery-1701527122144ayp9p.png' }}
-                  style={styles.favImage}
-                />
-                <Text style={styles.favName}>Celestial Ring {item}</Text>
-                <Text style={styles.favPrice}>$2,400</Text>
-                <TouchableOpacity style={styles.favRemove}>
-                  <Trash2 size={14} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
+          {favorites.length > 0 ? (
+            <View style={styles.favoritesGrid}>
+              {favorites.map((item) => (
+                <View key={item.id} style={styles.favItem}>
+                  <Image source={{ uri: item.image }} style={styles.favImage} />
+                  <Text style={styles.favName} numberOfLines={2}>{item.name}</Text>
+                  <Text style={styles.favPrice}>${item.price?.toLocaleString()}</Text>
+                  <TouchableOpacity 
+                    style={styles.favRemove}
+                    onPress={async () => {
+                      try {
+                        await apiFetch('/wishlist/remove', 'POST', { productId: item.id }, token);
+                        setFavorites(prev => prev.filter(f => f.id !== item.id));
+                        setWishlistCount(prev => prev - 1);
+                      } catch (e) {
+                        Alert.alert("Error", "Could not remove item");
+                      }
+                    }}
+                  >
+                    <Trash2 size={14} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Heart size={40} color="#e2e8f0" />
+              <Text style={{ color: '#94a3b8', marginTop: 10 }}>No favorites yet</Text>
+            </View>
+          )}
         </ScrollView>
       </View>
     );
@@ -304,7 +370,18 @@ const handleLogout = async () => {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#C5A059"
+          colors={['#C5A059']}
+        />
+      }
+    >
       {/* Profile Header */}
       <View style={styles.header}>
         <View style={styles.avatarWrapper}>
@@ -312,11 +389,47 @@ const handleLogout = async () => {
             source={{ uri: user?.avatar || 'https://via.placeholder.com/100' }}
             style={styles.avatar}
           />
-          <View style={styles.editBadge}>
+          <TouchableOpacity 
+            style={styles.editBadge}
+            onPress={() => { setNameInput(user?.name || ''); setEditingName(true); }}
+          >
             <Settings size={12} color="#fff" />
-          </View>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.userName}>{user?.name || 'Valued Member'}</Text>
+        {editingName ? (
+          <View style={styles.nameEditContainer}>
+            <TextInput
+              style={styles.nameEditInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              autoFocus
+              onBlur={async () => {
+                if (nameInput.trim() && nameInput !== user?.name) {
+                  try {
+                    await apiFetch('/users/profile', 'PUT', { name: nameInput.trim() }, token);
+                    Alert.alert("Success", "Name updated");
+                  } catch (e) {
+                    Alert.alert("Error", "Could not update name");
+                  }
+                }
+                setEditingName(false);
+              }}
+              onSubmitEditing={async () => {
+                if (nameInput.trim() && nameInput !== user?.name) {
+                  try {
+                    await apiFetch('/users/profile', 'PUT', { name: nameInput.trim() }, token);
+                    Alert.alert("Success", "Name updated");
+                  } catch (e) {
+                    Alert.alert("Error", "Could not update name");
+                  }
+                }
+                setEditingName(false);
+              }}
+            />
+          </View>
+        ) : (
+          <Text style={styles.userName}>{user?.name || 'Valued Member'}</Text>
+        )}
         <Text style={styles.userEmail}>{user?.email}</Text>
 
         <View style={styles.tierBadge}>
@@ -328,17 +441,17 @@ const handleLogout = async () => {
       {/* Stats Summary */}
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
-          <Text style={styles.statNumber}>12</Text>
+          <Text style={styles.statNumber}>{orderCount || 0}</Text>
           <Text style={styles.statLabel}>Orders</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={styles.statNumber}>08</Text>
+          <Text style={styles.statNumber}>{wishlistCount || 0}</Text>
           <Text style={styles.statLabel}>Wishlist</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={styles.statNumber}>02</Text>
+          <Text style={styles.statNumber}>0</Text>
           <Text style={styles.statLabel}>In Repair</Text>
         </View>
       </View>
@@ -350,13 +463,13 @@ const handleLogout = async () => {
           <ProfileOption
             icon={Package}
             title="Order History"
-            subtitle="Track and manage your orders"
+            subtitle={`${orderCount || 0} orders placed`}
             onPress={() => setView('orders')}
           />
           <ProfileOption
             icon={Heart}
             title="My Favorites"
-            subtitle="8 items saved for later"
+            subtitle={`${wishlistCount || 0} items saved for later`}
             onPress={() => setView('favorites')}
           />
           <ProfileOption
@@ -418,6 +531,18 @@ const styles = StyleSheet.create({
     borderColor: '#fff'
   },
   userName: { fontSize: 24, fontWeight: '300', color: '#1a1a1a', letterSpacing: 1 },
+  nameEditContainer: { alignItems: 'center' },
+  nameEditInput: { 
+    fontSize: 24, 
+    fontWeight: '300', 
+    color: '#1a1a1a', 
+    letterSpacing: 1,
+    textAlign: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#C5A059',
+    paddingVertical: 5,
+    minWidth: 150
+  },
   userEmail: { fontSize: 13, color: '#94a3b8', marginTop: 4, fontWeight: '400' },
   tierBadge: {
     flexDirection: 'row',
