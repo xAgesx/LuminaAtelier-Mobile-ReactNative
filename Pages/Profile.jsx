@@ -82,7 +82,7 @@ const OrderCard = ({ order }) => (
   </View>
 );
 
-export default function Profile({ navigation }) {
+export default function Profile({ navigation, onLogout }) {
   const [view, setView] = useState('profile');
   const [isFaceID, setIsFaceID] = useState(true);
   const [user, setUser] = useState(null);
@@ -136,10 +136,22 @@ export default function Profile({ navigation }) {
     }
   }, [view, user]);
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
-    navigation.replace('Auth');
+const handleLogout = async () => {
+    console.log("👤 Profile: Logout clicked");
+    try {
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('guestMode');
+      console.log("👤 Profile: AsyncStorage cleared");
+      if (onLogout) {
+        console.log("👤 Profile: Calling onLogout");
+        onLogout();
+      } else {
+        console.log("👤 Profile: onLogout is undefined!");
+      }
+    } catch (e) {
+      console.log("👤 Profile: Logout error", e);
+    }
   };
 
   const renderSubHeader = (title) => (

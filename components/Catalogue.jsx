@@ -78,7 +78,21 @@ const Catalogue = () => {
     }
 
     const isFav = wishlistIds.includes(productId);
-    const token = await AsyncStorage.getItem('token');
+    const tokenData = await AsyncStorage.getItem('token');
+    let token = null;
+
+    if (tokenData) {
+      try {
+        const parsed = JSON.parse(tokenData);
+        token = parsed.token;
+        const now = new Date().getTime();
+        if (parsed.expiry && now > parsed.expiry) {
+          token = null;
+        }
+      } catch (e) {
+        token = tokenData;
+      }
+    }
 
     if (!token) {
       Alert.alert("Membership Required", "Please log in.");

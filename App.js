@@ -39,10 +39,10 @@ function AtelierStack({ onTryOn }) {
   );
 }
 
-function MainTabs({ onARPress }) {
+function MainTabs({ onARPress, isGuest, onLogout }) {
   return (
     <Tab.Navigator
-      tabBar={(props) => <Footer {...props} onARPress={onARPress} />}
+      tabBar={(props) => <Footer {...props} onARPress={onARPress} isGuest={isGuest} />}
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Catalogue">
@@ -53,11 +53,9 @@ function MainTabs({ onARPress }) {
         component={Wishlist}
         options={{ headerShown: true, header: (props) => <Header {...props} /> }}
       />
-      <Tab.Screen
-        name="Profile"
-        component={Profile}
-        options={{ headerShown: true, header: (props) => <Header {...props} /> }}
-      />
+      <Tab.Screen name="Profile">
+        {() => <Profile onLogout={onLogout} />}
+      </Tab.Screen>
       <Tab.Screen
         name="Shop"
         component={Shop}
@@ -72,6 +70,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authKey, setAuthKey] = useState(0);
   const navigationRef = useRef(null);
 
   useEffect(() => {
@@ -132,11 +131,15 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    console.log("📱 App: handleLogout called");
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('guestMode');
+    console.log("📱 App: Setting isLoggedIn=false, isGuest=false");
     setIsLoggedIn(false);
     setIsGuest(false);
+    setAuthKey(prev => prev + 1);
+    console.log("📱 App: Auth key incremented");
   };
 
   if (checkingAuth) {
@@ -158,9 +161,9 @@ export default function App() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <View style={styles.container}>
+      <View style={styles.container} key={isLoggedIn ? 'loggedIn' : 'loggedOut'}>
         {!isLoggedIn && !isGuest ? (
-          <Auth onLogin={handleLogin} onGuest={handleGuest} />
+          <Auth key={`auth-${authKey}`} onLogin={handleLogin} onGuest={handleGuest} />
         ) : (
           <MainTabs onARPress={() => setShowAR(true)} isGuest={isGuest} onLogout={handleLogout} />
         )}

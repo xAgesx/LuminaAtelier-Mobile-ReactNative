@@ -31,10 +31,28 @@ const Wishlist = () => {
         fetchWishlist();
     }, []);
 
+    const getToken = async () => {
+        const tokenData = await AsyncStorage.getItem('token');
+        if (!tokenData) return null;
+        try {
+            const parsed = JSON.parse(tokenData);
+            const now = new Date().getTime();
+            if (parsed.expiry && now > parsed.expiry) return null;
+            return parsed.token;
+        } catch (e) {
+            return tokenData;
+        }
+    };
+
     const fetchWishlist = async () => {
         setLoading(true);
         try {
-            const token = await AsyncStorage.getItem('token');
+            const token = await getToken();
+            if (!token) {
+                Alert.alert("Please log in");
+                setLoading(false);
+                return;
+            }
             const response = await apiFetch('/wishlist', 'GET', null, token);
             
             if (response?.data?.products) {
@@ -51,7 +69,11 @@ const Wishlist = () => {
     // 2. Remove Item from Backend
     const removeItem = async (id) => {
         try {
-            const token = await AsyncStorage.getItem('token');
+            const token = await getToken();
+            if (!token) {
+                Alert.alert("Please log in");
+                return;
+            }
             const response = await apiFetch('/wishlist/remove', 'POST', { productId: id }, token);
             
             if (response) {
@@ -66,7 +88,12 @@ const Wishlist = () => {
     const moveToBag = async (product) => {
         setActionLoading(true);
         try {
-            const token = await AsyncStorage.getItem('token');
+            const token = await getToken();
+            if (!token) {
+                Alert.alert("Please log in");
+                setActionLoading(false);
+                return;
+            }
             
             // 1. Add to cart
             await apiFetch('/cart/add', 'POST', { 
