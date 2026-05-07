@@ -28,8 +28,8 @@ import {
   Lock,
   Mail
 } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -83,38 +83,26 @@ const OrderCard = ({ order }) => (
 );
 
 export default function Profile({ navigation, onLogout }) {
+  const { token, user, logout } = useAuth();
   const [view, setView] = useState('profile');
   const [isFaceID, setIsFaceID] = useState(true);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Added to prevent null crashes
+  const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('user');
-        if (stored) {
-          setUser(JSON.parse(stored));
-        } else {
-          // If no user is found, redirect to Login
-          navigation.replace('Auth');
-        }
-      } catch (e) {
-        console.error("Failed to load user", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  }, []);
+    if (user) {
+      setLoading(false);
+    } else if (!token) {
+      navigation.replace('Auth');
+    }
+  }, [user, token]);
 
   useEffect(() => {
     if (view === 'orders' && user?._id) {
       const fetchOrders = async () => {
         setLoadingOrders(true);
         try {
-          const token = await AsyncStorage.getItem('token');
           const data = await apiFetch('/orders/user/' + user._id, 'GET', null, token);
           if (data?.data?.orders) {
             setOrders(data.data.orders.map(o => ({
@@ -139,15 +127,9 @@ export default function Profile({ navigation, onLogout }) {
 const handleLogout = async () => {
     console.log("👤 Profile: Logout clicked");
     try {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('guestMode');
-      console.log("👤 Profile: AsyncStorage cleared");
       if (onLogout) {
         console.log("👤 Profile: Calling onLogout");
         onLogout();
-      } else {
-        console.log("👤 Profile: onLogout is undefined!");
       }
     } catch (e) {
       console.log("👤 Profile: Logout error", e);

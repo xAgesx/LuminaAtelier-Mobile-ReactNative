@@ -8,53 +8,51 @@ import {
   CheckCircle2, ArrowRight, Package, X, CreditCard, ShieldCheck 
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Shop({ navigation }) {
   console.log("Shop component rendering");
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState('bag');
   const [isCheckoutVisible, setCheckoutVisible] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('idle');
   const [selectedMethod, setSelectedMethod] = useState('card');
   
-  const [cartItems, setCartItems] = useState([]); // Initialized as array
+  const [cartItems, setCartItems] = useState([]); 
   const [orderHistory, setOrderHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      console.log("🛒 Shop useFocusEffect triggered, tab:", activeTab);
+      console.log("Shop useFocusEffect triggered, tab:", activeTab);
       loadShopData();
-    }, [activeTab])
+    }, [activeTab, token])
   );
 
   const loadShopData = async () => {
-    console.log("🛒 loadShopData called, activeTab:", activeTab);
+    console.log("loadShopData called, activeTab:", activeTab);
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
-      console.log("🛒 Token:", token ? "exists" : "null");
-      const user = JSON.parse(await AsyncStorage.getItem('user'));
-      console.log("🛒 User:", user);
+      console.log("Token:", token ? "exists" : "null");
 
       if (activeTab === 'bag') {
         const res = await apiFetch('/cart', 'GET', null, token);
-        console.log("🛒 BAG DATA:", res);
+        console.log("BAG DATA:", res);
         
         // Safety check to ensure we always set an array
         const fetchedItems = res?.data?.products || res?.data || res || [];
         setCartItems(Array.isArray(fetchedItems) ? fetchedItems : []);
       } else {
         const res = await apiFetch('/orders', 'GET', null, token);
-        console.log("🛒 HISTORY DATA:", res);
+        console.log("HISTORY DATA:", res);
         const fetchedOrders = res?.data?.orders || res?.orders || res || [];
         setOrderHistory(Array.isArray(fetchedOrders) ? fetchedOrders : []);
       }
     } catch (e) {
-      console.log("🛒 LOAD ERROR:", e);
+      console.log("LOAD ERROR:", e);
       setCartItems([]);
     } finally {
       setLoading(false);
@@ -68,7 +66,6 @@ export default function Shop({ navigation }) {
     ));
 
     try {
-      const token = await AsyncStorage.getItem('token');
       await apiFetch('/cart/update', 'POST', { productId, quantity: newQty }, token);
     } catch (e) {
       console.log("QTY UPDATE ERROR", e);
@@ -77,7 +74,6 @@ export default function Shop({ navigation }) {
 
   const removeItem = async (productId) => {
     try {
-      const token = await AsyncStorage.getItem('token');
       await apiFetch(`/cart/${productId}`, 'DELETE', null, token);
       setCartItems(prev => prev.filter(item => item.productId?._id !== productId));
     } catch (e) {
@@ -88,7 +84,6 @@ export default function Shop({ navigation }) {
   const processPayment = async () => {
     setPaymentStatus('processing');
     try {
-      const token = await AsyncStorage.getItem('token');
       const res = await apiFetch('/orders', 'POST', { paymentMethod: selectedMethod, total }, token);
       if (res) {
         setPaymentStatus('success');

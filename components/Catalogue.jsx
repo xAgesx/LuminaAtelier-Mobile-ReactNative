@@ -6,14 +6,15 @@ import {
 } from 'react-native';
 import { Heart, Filter, Grid, LayoutList, RotateCcw, X } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 const Catalogue = () => {
   console.log("📦 Catalogue component rendering");
   const navigation = useNavigation();
+  const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wishlistIds, setWishlistIds] = useState([]); 
@@ -33,23 +34,9 @@ const Catalogue = () => {
 
   const materials = ['All', '18k Gold', 'Silver', 'Platinum', 'Rose Gold', 'Steel'];
 
-  const getToken = async () => {
-    const tokenData = await AsyncStorage.getItem('token');
-    if (!tokenData) return null;
-    try {
-      const parsed = JSON.parse(tokenData);
-      const now = new Date().getTime();
-      if (parsed.expiry && now > parsed.expiry) return null;
-      return parsed.token;
-    } catch (e) {
-      return tokenData;
-    }
-  };
-
   const loadData = async () => {
     console.log("loadData called");
     try {
-      const token = await getToken();
       console.log("Token:", token ? "exists" : "null");
       const [productRes, wishlistRes] = await Promise.all([
         apiFetch('/products', 'GET'),
@@ -99,25 +86,6 @@ const Catalogue = () => {
 
     const isFav = wishlistIds.includes(productId);
     console.log("isFav:", isFav);
-    
-    const tokenData = await AsyncStorage.getItem('token');
-    console.log("tokenData:", tokenData ? "exists" : "null");
-    let token = null;
-
-    if (tokenData) {
-      try {
-        const parsed = JSON.parse(tokenData);
-        token = parsed.token;
-        console.log("token extracted:", token ? "yes" : "no");
-        const now = new Date().getTime();
-        if (parsed.expiry && now > parsed.expiry) {
-          console.log("token expired");
-          token = null;
-        }
-      } catch (e) {
-        token = tokenData;
-      }
-    }
 
     if (!token) {
       console.log("No token, showing alert");

@@ -1,6 +1,9 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+
+dotenv.config({ path: "./.env" });
+
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
@@ -17,7 +20,6 @@ app.use("/wishlist", wishlistRoutes);
 app.use("/orders", orderRoutes);
 app.use("/cart", cartRoutes);
 
-dotenv.config({ path: "./.env" });
 mongoose
   .connect(process.env.DATABASE)
   .then(() => {

@@ -13,14 +13,15 @@ import {
 } from 'react-native';
 import { ShoppingBag, Trash2, ArrowRight, Heart, Sparkles } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 const Wishlist = () => {
     console.log("Wishlist component rendering");
     const navigation = useNavigation();
+    const { token } = useAuth();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -30,26 +31,12 @@ const Wishlist = () => {
         useCallback(() => {
             console.log("Wishlist focus triggered - fetching fresh data");
             fetchWishlist();
-        }, [])
+        }, [token])
     );
-
-    const getToken = async () => {
-        const tokenData = await AsyncStorage.getItem('token');
-        if (!tokenData) return null;
-        try {
-            const parsed = JSON.parse(tokenData);
-            const now = new Date().getTime();
-            if (parsed.expiry && now > parsed.expiry) return null;
-            return parsed.token;
-        } catch (e) {
-            return tokenData;
-        }
-    };
 
     const fetchWishlist = async () => {
         setLoading(true);
         try {
-            const token = await getToken();
             if (!token) {
                 Alert.alert("Please log in");
                 setLoading(false);
@@ -71,7 +58,6 @@ const Wishlist = () => {
     // 2. Remove Item from Backend
     const removeItem = async (id) => {
         try {
-            const token = await getToken();
             if (!token) {
                 Alert.alert("Please log in");
                 return;
@@ -90,7 +76,6 @@ const Wishlist = () => {
     const moveToBag = async (product) => {
         setActionLoading(true);
         try {
-            const token = await getToken();
             if (!token) {
                 Alert.alert("Please log in");
                 setActionLoading(false);
