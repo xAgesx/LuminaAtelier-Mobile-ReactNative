@@ -1,12 +1,28 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert } from 'react-native';
 import { ShoppingBag, Heart, User, ScanEye, LayoutGrid } from 'lucide-react-native';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { apiFetch } from '../api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
+const getToken = async () => {
+  const tokenData = await AsyncStorage.getItem('token');
+  if (!tokenData) return null;
+  try {
+    const parsed = JSON.parse(tokenData);
+    const now = new Date().getTime();
+    if (parsed.expiry && now > parsed.expiry) return null;
+    return parsed.token;
+  } catch (e) {
+    return tokenData;
+  }
+};
+
 const Footer = ({ isGuest = false, onARPress }) => {
   const navigation = useNavigation();
+  const [adding, setAdding] = useState(false);
   
   const currentRouteName = useNavigationState((state) => {
     if (!state) return null;
@@ -23,18 +39,49 @@ const Footer = ({ isGuest = false, onARPress }) => {
 
   const isActive = (name) => currentRouteName === name;
 
+  const handleAddToBag = async () => {
+    const token = await getToken();
+    if (!token) {
+      Alert.alert("Login Required", "Please log in to add items to your bag");
+      return;
+    }
+
+    const catalogueState = navigation.getState()?.routes?.find(r => r.name === 'Catalogue')?.state;
+    const product = catalogueState?.routes?.find(r => r.name === 'Details')?.params?.product;
+    
+    if (!product?._id) {
+      Alert.alert("Error", "Unable to add product");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const res = await apiFetch('/cart/add', 'POST', { productId: product._id, quantity: 1 }, token);
+      if (res?.data || res?.message?.includes('added')) {
+        Alert.alert("Success", `${product.name} added to your bag!`);
+        navigation.navigate('Shop');
+      } else {
+        Alert.alert("Error", res?.message || "Could not add to bag");
+      }
+    } catch (e) {
+      Alert.alert("Error", "Could not add to bag");
+    }
+    setAdding(false);
+  };
+
   return (
     <View style={styles.footerWrapper}>
       
       {isDetails && (
         <View style={styles.actionSection}>
           <TouchableOpacity 
-            style={styles.buyButton}
-            onPress={() => navigation.navigate('Shop')}
+            style={[styles.buyButton, adding && { opacity: 0.6 }]}
+            onPress={handleAddToBag}
+            disabled={adding}
             activeOpacity={0.8}
           >
             <ShoppingBag size={20} color="#fff" strokeWidth={2} />
-            <Text style={styles.buyButtonText}>Add to Bag</Text>
+            <Text style={styles.buyButtonText}>{adding ? 'Adding...' : 'Add to Bag'}</Text>
           </TouchableOpacity>
         </View>
       )}
