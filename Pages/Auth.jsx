@@ -13,7 +13,7 @@ console.log("Auth.jsx loading");
 
 const { width, height } = Dimensions.get('window');
 
-export default function Auth({ navigation, onLogin, onGuest }) {
+export default function Auth({ navigation, onLogin, onGuest, onClose }) {
   console.log("Auth component rendering");
   const { show } = useNotification();
   const [activeTab, setActiveTab] = useState('login');
@@ -98,6 +98,11 @@ export default function Auth({ navigation, onLogin, onGuest }) {
               </View>
               <Text style={styles.brandName}>LUMINA</Text>
               <Text style={styles.atelierText}>ATELIER</Text>
+              {onClose && (
+                <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                  <Text style={styles.closeBtnText}>Close</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Tabs */}
@@ -268,8 +273,10 @@ const styles = StyleSheet.create({
     width: width * 0.8, height: width * 0.8, borderRadius: width * 0.4,
     backgroundColor: 'rgba(197, 160, 89, 0.08)',
   },
-  header: { alignItems: 'center', marginTop: 40, marginBottom: 30 },
+  header: { alignItems: 'center', marginTop: 40, marginBottom: 30, position: 'relative', width: '100%' },
   monogramContainer: { marginBottom: 15 },
+  closeBtn: { position: 'absolute', top: 0, right: 20 },
+  closeBtnText: { fontSize: 14, color: '#C5A059', fontWeight: '600' },
   monogramRing: {
     width: 60, height: 60, borderRadius: 30,
     borderWidth: 1, borderColor: 'rgba(197, 160, 89, 0.2)',

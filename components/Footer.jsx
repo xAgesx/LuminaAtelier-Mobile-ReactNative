@@ -21,7 +21,7 @@ const getToken = async () => {
   }
 };
 
-const Footer = ({ isGuest = false, onARPress }) => {
+const Footer = ({ isGuest = false, onARPress, onAuthPress }) => {
   const navigation = useNavigation();
   const { show } = useNotification();
   const [adding, setAdding] = useState(false);
@@ -130,7 +130,10 @@ const Footer = ({ isGuest = false, onARPress }) => {
         {isGuest ? (
           <TouchableOpacity 
             style={styles.navItem} 
-            onPress={() => {navigation.navigate("Auth")}}
+            onPress={() => {
+              show("Please log in to access wishlist", "login");
+              onAuthPress();
+            }}
           >
             <Heart 
               size={22} 
@@ -160,7 +163,10 @@ const Footer = ({ isGuest = false, onARPress }) => {
         {isGuest ? (
           <TouchableOpacity 
             style={styles.navItem} 
-            onPress={() => {}}
+            onPress={() => {
+              show("Please log in to access profile", "login");
+              onAuthPress();
+            }}
           >
             <User 
               size={22} 

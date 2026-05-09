@@ -38,10 +38,10 @@ function AtelierStack({ onTryOn }) {
   );
 }
 
-function MainTabs({ onARPress, isGuest, onLogout }) {
+function MainTabs({ onARPress, isGuest, onLogout, onAuthPress }) {
   return (
     <Tab.Navigator
-      tabBar={(props) => <Footer {...props} onARPress={onARPress} isGuest={isGuest} />}
+      tabBar={(props) => <Footer {...props} onARPress={onARPress} isGuest={isGuest} onAuthPress={onAuthPress} />}
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Catalogue">
@@ -69,6 +69,7 @@ function AppContent() {
   const [authKey, setAuthKey] = useState(0);
   const { token, login, logout, isLoading } = useAuth();
   const [isGuest, setIsGuest] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const navigationRef = useRef(null);
 
   const handleGuest = async () => {
@@ -79,6 +80,10 @@ function AppContent() {
     await logout();
     setIsGuest(false);
     setAuthKey(prev => prev + 1);
+  };
+
+  const handleShowAuth = () => {
+    setShowAuth(true);
   };
 
   if (isLoading) {
@@ -101,10 +106,12 @@ function AppContent() {
   return (
     <NavigationContainer ref={navigationRef}>
       <View style={styles.container} key={token ? 'loggedIn' : 'loggedOut'}>
-        {!token && !isGuest ? (
+        {showAuth && !token ? (
+          <Auth key={`auth-${authKey}`} onLogin={login} onGuest={() => { setShowAuth(false); handleGuest(); }} onClose={() => setShowAuth(false)} />
+        ) : !token && !isGuest ? (
           <Auth key={`auth-${authKey}`} onLogin={login} onGuest={handleGuest} />
         ) : (
-          <MainTabs onARPress={() => setShowAR(true)} isGuest={isGuest} onLogout={handleLogout} />
+          <MainTabs onARPress={() => setShowAR(true)} isGuest={isGuest} onLogout={handleLogout} onAuthPress={handleShowAuth} />
         )}
         <StatusBar style="auto" />
       </View>
