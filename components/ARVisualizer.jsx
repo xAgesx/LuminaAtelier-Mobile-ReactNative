@@ -1,21 +1,23 @@
 import React, { useState, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Dimensions, PanResponder } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Dimensions, PanResponder, Modal } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { GLView } from 'expo-gl';
 import { Renderer } from 'expo-three';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Asset } from 'expo-asset';
-import { X } from 'lucide-react-native';
+import { X, RotateCcw, Info, Settings, Camera, Move, Grid, Sliders } from 'lucide-react-native';
 import Slider from '@react-native-community/slider';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-export default function ARVisualizer({ onExit }) {
+export default function ARVisualizer({ onExit, product }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(true);
   const [scale, setScale] = useState(0.25);
   const [rotation, setRotation] = useState(0);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   
   const modelRef = useRef(null);
   const shadowRef = useRef(null);
@@ -50,12 +52,13 @@ export default function ARVisualizer({ onExit }) {
     })
   ).current;
 
-  if (!permission) return <View style={styles.centered}><Text>Initializing...</Text></View>;
+  if (!permission) return <View style={styles.centered}><Text style={styles.loadingText}>Initializing...</Text></View>;
   if (!permission.granted) {
     return (
       <View style={styles.centered}>
-        <TouchableOpacity style={styles.btn} onPress={requestPermission}>
-          <Text style={styles.btnText}>Allow Camera</Text>
+        <Text style={styles.permissionText}>Camera access is required for AR</Text>
+        <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
+          <Text style={styles.permissionBtnText}>Allow Camera</Text>
         </TouchableOpacity>
       </View>
     );
@@ -79,13 +82,27 @@ export default function ARVisualizer({ onExit }) {
     }
   };
 
+  const resetPosition = () => {
+    setScale(0.25);
+    setRotation(0);
+    if (modelRef.current) {
+      modelRef.current.scale.set(0.25, 0.25, 0.25);
+      modelRef.current.rotation.y = 0;
+      modelRef.current.position.set(0, -0.2, 0);
+      positionRef.current = { x: 0, y: -0.2 };
+    }
+    if (shadowRef.current) {
+      shadowRef.current.scale.set(0.5, 0.5, 1);
+      shadowRef.current.position.set(0, -0.35, -0.1);
+    }
+  };
+
   const onContextCreate = async (gl) => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
     const renderer = new Renderer({ gl });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
-    // CINEMATIC LIGHTING SETUP
     const keyLight = new THREE.DirectionalLight(0xfff5e1, 1.2);
     keyLight.position.set(5, 10, 5);
     scene.add(keyLight);
@@ -95,7 +112,6 @@ export default function ARVisualizer({ onExit }) {
     scene.add(rimLight);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-
     camera.position.z = 3;
 
     const shadowGeometry = new THREE.CircleGeometry(0.5, 32);
@@ -142,7 +158,6 @@ export default function ARVisualizer({ onExit }) {
           setLoading(false);
 
           const render = () => {
-            // model.rotation.y += 0.002; 
             renderer.render(scene, camera);
             gl.endFrameEXP();
             requestAnimationFrame(render);
@@ -168,51 +183,107 @@ export default function ARVisualizer({ onExit }) {
         </View>
         
         <SafeAreaView style={styles.overlay} pointerEvents="box-none">
-          <TouchableOpacity onPress={onExit} style={styles.closeBtn}>
-            <X size={24} color="white" />
-          </TouchableOpacity>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={onExit} style={styles.iconBtn}>
+              <X size={22} color="#fff" />
+            </TouchableOpacity>
+            
+            <View style={styles.productInfo}>
+              <Text style={styles.productName}>{product?.name || 'Ring Preview'}</Text>
+            </View>
 
-          <View style={styles.bottomControls}>
+            <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.iconBtn}>
+              <View style={styles.menuIcon}>
+                <View style={styles.menuLine} />
+                <View style={styles.menuLine} />
+                <View style={styles.menuLine} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.centerHint}>
+            {loading && <Text style={styles.hintText}>Loading model...</Text>}
+          </View>
+
+          <View style={styles.bottomBar}>
             {!loading && (
-              <View style={styles.sliderCard}>
-                <Text style={styles.dragHint}>Position the ring on your finger</Text>
-                
-                <View style={styles.sliderGroup}>
-                  <View style={styles.labelRow}>
-                    <Text style={styles.label}>Angle</Text>
-                    <Text style={styles.valText}>{Math.round((rotation * 180) / Math.PI)}°</Text>
-                  </View>
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={0}
-                    maximumValue={Math.PI * 2}
-                    value={rotation}
-                    onValueChange={handleRotationChange}
-                    minimumTrackTintColor="#D4AF37"
-                    maximumTrackTintColor="rgba(255,255,255,0.2)"
-                    thumbTintColor="#D4AF37"
-                  />
-                </View>
+              <View style={styles.controls}>
+                <TouchableOpacity style={styles.controlBtn} onPress={resetPosition}>
+                  <Move size={18} color="#94a3b8" />
+                  <Text style={styles.controlLabel}>Reset</Text>
+                </TouchableOpacity>
 
-                <View style={styles.sliderGroup}>
-                  <View style={styles.labelRow}>
-                    <Text style={styles.label}>Ring Size</Text>
-                    <Text style={styles.valText}>{Math.round(scale * 400)}</Text>
-                  </View>
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={0.05}
-                    maximumValue={0.6}
-                    value={scale}
-                    onValueChange={handleScaleChange}
-                    minimumTrackTintColor="#D4AF37"
-                    maximumTrackTintColor="rgba(255,255,255,0.2)"
-                    thumbTintColor="#D4AF37"
-                  />
-                </View>
+                <TouchableOpacity style={styles.controlBtn} onPress={() => setShowHelp(true)}>
+                  <Info size={18} color="#94a3b8" />
+                  <Text style={styles.controlLabel}>Help</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
+
+          <Modal visible={showMenu} animationType="fade" transparent>
+            <TouchableOpacity 
+              style={styles.modalOverlay} 
+              activeOpacity={1} 
+              onPress={() => setShowMenu(false)}
+            >
+              <View style={styles.menuPanel}>
+                <Text style={styles.menuTitle}>AR Settings</Text>
+                
+                <TouchableOpacity style={styles.menuItem}>
+                  <Camera size={20} color="#94a3b8" />
+                  <Text style={styles.menuItemText}>Camera Quality</Text>
+                  <Text style={styles.menuItemValue}>HD</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => { setShowHelp(true); setShowMenu(false); }}>
+                  <Info size={20} color="#94a3b8" />
+                  <Text style={styles.menuItemText}>Help & Tips</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => { resetPosition(); setShowMenu(false); }}>
+                  <RotateCcw size={20} color="#94a3b8" />
+                  <Text style={styles.menuItemText}>Reset Position</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuItem} onPress={() => setShowMenu(false)}>
+                  <Sliders size={20} color="#94a3b8" />
+                  <Text style={styles.menuItemText}>Controls</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          <Modal visible={showHelp} animationType="slide" transparent>
+            <View style={styles.helpModal}>
+              <View style={styles.helpContent}>
+                <View style={styles.helpHeader}>
+                  <Text style={styles.helpTitle}>AR Preview Guide</Text>
+                  <TouchableOpacity onPress={() => setShowHelp(false)}>
+                    <X size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.helpSection}>
+                  <Text style={styles.helpSectionTitle}>Controls</Text>
+                  <Text style={styles.helpText}>• Drag to move the ring position</Text>
+                  <Text style={styles.helpText}>• Use sliders for precise adjustments</Text>
+                  <Text style={styles.helpText}>• Tap Reset to restore default position</Text>
+                </View>
+
+                <View style={styles.helpSection}>
+                  <Text style={styles.helpSectionTitle}>Tips</Text>
+                  <Text style={styles.helpText}>• Ensure good lighting</Text>
+                  <Text style={styles.helpText}>• Keep your hand steady</Text>
+                  <Text style={styles.helpText}>• Move slowly for best results</Text>
+                </View>
+
+                <TouchableOpacity style={styles.helpCloseBtn} onPress={() => setShowHelp(false)}>
+                  <Text style={styles.helpCloseBtnText}>Got It</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </SafeAreaView>
       </CameraView>
     </View>
@@ -220,42 +291,71 @@ export default function ARVisualizer({ onExit }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   camera: { flex: 1 },
   glContainer: { flex: 1 },
   glView: { ...StyleSheet.absoluteFillObject },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  btn: { backgroundColor: '#D4AF37', padding: 15, borderRadius: 8 },
-  btnText: { color: '#fff', fontWeight: 'bold' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
+  permissionText: { color: '#fff', fontSize: 16, marginBottom: 20 },
+  permissionBtn: { backgroundColor: '#D4AF37', padding: 15, borderRadius: 8 },
+  permissionBtnText: { color: '#fff', fontWeight: 'bold' },
   overlay: { flex: 1, justifyContent: 'space-between', padding: 20 },
-  closeBtn: { 
-    width: 44, 
-    height: 44, 
-    borderRadius: 22, 
-    backgroundColor: 'rgba(0,0,0,0.4)', 
-    justifyContent: 'center', 
+  topBar: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)'
   },
-  bottomControls: { marginBottom: 30, alignItems: 'center' },
-  dragHint: { color: '#D4AF37', fontSize: 11, textAlign: 'center', marginBottom: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
-  sliderCard: {
-    width: width - 40,
-    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-    borderRadius: 24,
-    padding: 20,
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  menuIcon: { gap: 4, alignItems: 'center' },
+  menuLine: { width: 18, height: 2, backgroundColor: '#fff', borderRadius: 1 },
+  productInfo: { alignItems: 'center' },
+  productName: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  centerHint: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  hintText: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
+  bottomBar: { marginBottom: 40 },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
   },
-  sliderGroup: { width: '100%', marginBottom: 5 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
-  label: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
-  valText: { color: '#D4AF37', fontSize: 10, fontWeight: 'bold' },
-  slider: { width: '100%', height: 30 },
+  controlBtn: { alignItems: 'center', gap: 6 },
+  controlLabel: { fontSize: 10, color: '#94a3b8', fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 80, paddingRight: 20 },
+  menuPanel: {
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+    borderRadius: 16,
+    padding: 20,
+    width: 220,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  menuTitle: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 20 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', gap: 12 },
+  menuItemText: { flex: 1, fontSize: 14, color: '#fff' },
+  menuItemValue: { fontSize: 12, color: '#D4AF37', fontWeight: '600' },
+  helpModal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  helpContent: { backgroundColor: '#1a1a1a', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, paddingBottom: 40 },
+  helpHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  helpTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  helpSection: { marginBottom: 20 },
+  helpSectionTitle: { fontSize: 12, fontWeight: '700', color: '#D4AF37', textTransform: 'uppercase', marginBottom: 10 },
+  helpText: { fontSize: 14, color: '#94a3b8', marginBottom: 8, lineHeight: 20 },
+  helpCloseBtn: { backgroundColor: '#D4AF37', paddingVertical: 15, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+  helpCloseBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

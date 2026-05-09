@@ -57,7 +57,7 @@ const Details = ({ route, onTryOn }) => {
           />
           <TouchableOpacity 
             style={styles.arButton} 
-            onPress={() => onTryOn && onTryOn()}
+            onPress={() => onTryOn && onTryOn(product)}
           >
             <Camera size={18} color="#1a1a1a" />
             <Text style={styles.arButtonText}>Try on Your Hand</Text>

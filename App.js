@@ -38,10 +38,10 @@ function AtelierStack({ onTryOn }) {
   );
 }
 
-function MainTabs({ onARPress, isGuest, onLogout, onAuthPress }) {
+function MainTabs({ isGuest, onLogout, onAuthPress, onARPress }) {
   return (
     <Tab.Navigator
-      tabBar={(props) => <Footer {...props} onARPress={onARPress} isGuest={isGuest} onAuthPress={onAuthPress} />}
+      tabBar={(props) => <Footer {...props} isGuest={isGuest} onAuthPress={onAuthPress} onARPress={onARPress} />}
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Catalogue">
@@ -66,6 +66,7 @@ function MainTabs({ onARPress, isGuest, onLogout, onAuthPress }) {
 
 function AppContent() {
   const [showAR, setShowAR] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [authKey, setAuthKey] = useState(0);
   const { token, login, logout, isLoading } = useAuth();
   const [isGuest, setIsGuest] = useState(false);
@@ -86,6 +87,16 @@ function AppContent() {
     setShowAuth(true);
   };
 
+  const handleARPress = (product) => {
+    setSelectedProduct(product);
+    setShowAR(true);
+  };
+
+  const handleARExit = () => {
+    setShowAR(false);
+    setSelectedProduct(null);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -97,7 +108,10 @@ function AppContent() {
   if (showAR) {
     return (
       <View style={styles.container}>
-        <ARVisualizer onExit={() => setShowAR(false)} />
+        <ARVisualizer 
+          onExit={handleARExit} 
+          product={selectedProduct}
+        />
         <StatusBar style="light" />
       </View>
     );
@@ -111,7 +125,12 @@ function AppContent() {
         ) : !token && !isGuest ? (
           <Auth key={`auth-${authKey}`} onLogin={login} onGuest={handleGuest} />
         ) : (
-          <MainTabs onARPress={() => setShowAR(true)} isGuest={isGuest} onLogout={handleLogout} onAuthPress={handleShowAuth} />
+          <MainTabs 
+            onARPress={handleARPress}
+            isGuest={isGuest} 
+            onLogout={handleLogout} 
+            onAuthPress={handleShowAuth} 
+          />
         )}
         <StatusBar style="auto" />
       </View>

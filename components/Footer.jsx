@@ -41,6 +41,11 @@ const Footer = ({ isGuest = false, onARPress, onAuthPress }) => {
 
   const isActive = (name) => currentRouteName === name;
 
+  const getCurrentProduct = () => {
+    const catalogueState = navigation.getState()?.routes?.find(r => r.name === 'Catalogue')?.state;
+    return catalogueState?.routes?.find(r => r.name === 'Details')?.params?.product;
+  };
+
   const handleAddToBag = async () => {
     const token = await getToken();
     if (!token) {
@@ -48,8 +53,7 @@ const Footer = ({ isGuest = false, onARPress, onAuthPress }) => {
       return;
     }
 
-    const catalogueState = navigation.getState()?.routes?.find(r => r.name === 'Catalogue')?.state;
-    const product = catalogueState?.routes?.find(r => r.name === 'Details')?.params?.product;
+    const product = getCurrentProduct();
     
     if (!product?._id) {
       show("Unable to add product", "cart");
@@ -69,6 +73,15 @@ const Footer = ({ isGuest = false, onARPress, onAuthPress }) => {
       show("Could not add to bag", "cart");
     }
     setAdding(false);
+  };
+
+  const handleARPress = () => {
+    const product = getCurrentProduct();
+    if (product) {
+      onARPress(product);
+    } else {
+      show("Select a product first", "cart");
+    }
   };
 
   return (
@@ -120,7 +133,7 @@ const Footer = ({ isGuest = false, onARPress, onAuthPress }) => {
         <View style={styles.centerContainer}>
           <TouchableOpacity 
             style={styles.arCircle} 
-            onPress={() => onARPress ? onARPress() : navigation.navigate("Auth")}
+            onPress={handleARPress}
           >
             <ScanEye size={24} color="#fff" strokeWidth={2} />
           </TouchableOpacity>
