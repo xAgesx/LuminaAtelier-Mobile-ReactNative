@@ -33,6 +33,7 @@ import {
 } from 'lucide-react-native';
 import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const { width } = Dimensions.get('window');
 
@@ -87,6 +88,7 @@ const OrderCard = ({ order }) => (
 
 export default function Profile({ navigation, onLogout }) {
   const { token, user, logout } = useAuth();
+  const { show } = useNotification();
   const [view, setView] = useState('profile');
   const [isFaceID, setIsFaceID] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -176,10 +178,9 @@ export default function Profile({ navigation, onLogout }) {
   }, [view, user, token]);
 
 const handleLogout = async () => {
-    console.log("👤 Profile: Logout clicked");
     try {
+      show("Logged out from Lumina Atelier", "logout");
       if (onLogout) {
-        console.log("👤 Profile: Calling onLogout");
         onLogout();
       }
     } catch (e) {
@@ -248,8 +249,9 @@ const handleLogout = async () => {
                         await apiFetch('/wishlist/remove', 'POST', { productId: item.id }, token);
                         setFavorites(prev => prev.filter(f => f.id !== item.id));
                         setWishlistCount(prev => prev - 1);
+                        show("Removed from wishlist", "wishlist");
                       } catch (e) {
-                        Alert.alert("Error", "Could not remove item");
+                        show("Could not remove item", "wishlist");
                       }
                     }}
                   >
@@ -407,9 +409,9 @@ const handleLogout = async () => {
                 if (nameInput.trim() && nameInput !== user?.name) {
                   try {
                     await apiFetch('/users/profile', 'PUT', { name: nameInput.trim() }, token);
-                    Alert.alert("Success", "Name updated");
+                    show("Name updated", "cart");
                   } catch (e) {
-                    Alert.alert("Error", "Could not update name");
+                    show("Could not update name", "cart");
                   }
                 }
                 setEditingName(false);
@@ -418,9 +420,9 @@ const handleLogout = async () => {
                 if (nameInput.trim() && nameInput !== user?.name) {
                   try {
                     await apiFetch('/users/profile', 'PUT', { name: nameInput.trim() }, token);
-                    Alert.alert("Success", "Name updated");
+                    show("Name updated", "cart");
                   } catch (e) {
-                    Alert.alert("Error", "Could not update name");
+                    show("Could not update name", "cart");
                   }
                 }
                 setEditingName(false);

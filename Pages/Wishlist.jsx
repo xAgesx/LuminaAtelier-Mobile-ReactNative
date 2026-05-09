@@ -8,20 +8,18 @@ import {
     TouchableOpacity,
     Dimensions,
     SafeAreaView,
-    ActivityIndicator,
-    Alert
+    ActivityIndicator
 } from 'react-native';
 import { ShoppingBag, Trash2, ArrowRight, Heart, Sparkles } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext';
-
-const { width } = Dimensions.get('window');
+import { useNotification } from '../context/NotificationContext';
 
 const Wishlist = () => {
-    console.log("Wishlist component rendering");
     const navigation = useNavigation();
     const { token } = useAuth();
+    const { show } = useNotification();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -38,7 +36,7 @@ const Wishlist = () => {
         setLoading(true);
         try {
             if (!token) {
-                Alert.alert("Please log in");
+                show("Please log in", "login");
                 setLoading(false);
                 return;
             }
@@ -59,16 +57,17 @@ const Wishlist = () => {
     const removeItem = async (id) => {
         try {
             if (!token) {
-                Alert.alert("Please log in");
+                show("Please log in", "login");
                 return;
             }
             const response = await apiFetch('/wishlist/remove', 'POST', { productId: id }, token);
             
             if (response) {
                 setItems(prev => prev.filter(item => item._id !== id));
+                show("Removed from wishlist", "wishlist");
             }
         } catch (error) {
-            Alert.alert("Error", "Could not remove item. Please try again.");
+            show("Could not remove item", "wishlist");
         }
     };
 
@@ -77,23 +76,21 @@ const Wishlist = () => {
         setActionLoading(true);
         try {
             if (!token) {
-                Alert.alert("Please log in");
+                show("Please log in to add to bag", "login");
                 setActionLoading(false);
                 return;
             }
             
-            // 1. Add to cart
             await apiFetch('/cart/add', 'POST', { 
                 productId: product._id,
                 quantity: 1 
             }, token);
 
-            // 2. Remove from wishlist
             await removeItem(product._id);
             
-            Alert.alert("Success", `${product.name} moved to your bag.`);
+            show(`${product.name} moved to your bag`, "cart");
         } catch (error) {
-            Alert.alert("Error", "Could not move item to bag.");
+            show("Could not move item to bag", "cart");
         } finally {
             setActionLoading(false);
         }
@@ -176,7 +173,7 @@ const Wishlist = () => {
                         </View>
                         <TouchableOpacity 
                             style={[styles.checkoutBtn, actionLoading && { opacity: 0.7 }]}
-                            onPress={() => Alert.alert("Bulk Action", "Moving all items to your bag...")}
+                            onPress={() => show("All items moved to bag", "cart")}
                         >
                             <Text style={styles.checkoutBtnText}>Move All to Bag</Text>
                             <ArrowRight size={20} color="#fff" />

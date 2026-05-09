@@ -1,20 +1,22 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Image, TouchableOpacity, 
-  Dimensions, Modal, Pressable, Alert, ActivityIndicator, SafeAreaView,
+  Dimensions, Modal, Pressable, ActivityIndicator, SafeAreaView,
   ScrollView
 } from 'react-native';
 import { Heart, Filter, Grid, LayoutList, RotateCcw, X } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const { width, height } = Dimensions.get('window');
 
 const Catalogue = () => {
-  console.log("📦 Catalogue component rendering");
+  console.log("Catalogue component rendering");
   const navigation = useNavigation();
   const { token } = useAuth();
+  const { show } = useNotification();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wishlistIds, setWishlistIds] = useState([]); 
@@ -77,31 +79,25 @@ const Catalogue = () => {
 
   const toggleWishlist = async (product) => {
     const productId = product._id;
-    console.log("toggleWishlist called, productId:", productId);
-    
-    if (!productId) {
-      console.log("CRITICAL ERROR: This product has no _id", product);
-      return;
-    }
+    if (!productId) return;
 
     const isFav = wishlistIds.includes(productId);
-    console.log("isFav:", isFav);
 
     if (!token) {
-      console.log("No token, showing alert");
-      Alert.alert("Membership Required", "Please log in.");
+      show("Please log in to save favorites", "login");
       return;
     }
     
     setWishlistIds(prev => isFav ? prev.filter(id => id !== productId) : [...prev, productId]);
 
     try {
-      console.log("Calling API with token:", token.substring(0, 20) + "...");
       let res;
       if (isFav) {
         res = await apiFetch('/wishlist/remove', 'POST', { productId }, token);
+        show(`${product.name} removed from wishlist`, "wishlist");
       } else {
         res = await apiFetch('/wishlist/add', 'POST', { productId }, token);
+        show(`${product.name} saved to wishlist`, "wishlist");
       }
       console.log("Wishlist API Response:", res);
       if (res?.error) {

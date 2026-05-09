@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { ShoppingBag, Heart, User, ScanEye, LayoutGrid } from 'lucide-react-native';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { apiFetch } from '../api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNotification } from '../context/NotificationContext';
 
 const { width } = Dimensions.get('window');
 
@@ -22,6 +23,7 @@ const getToken = async () => {
 
 const Footer = ({ isGuest = false, onARPress }) => {
   const navigation = useNavigation();
+  const { show } = useNotification();
   const [adding, setAdding] = useState(false);
   
   const currentRouteName = useNavigationState((state) => {
@@ -42,7 +44,7 @@ const Footer = ({ isGuest = false, onARPress }) => {
   const handleAddToBag = async () => {
     const token = await getToken();
     if (!token) {
-      Alert.alert("Login Required", "Please log in to add items to your bag");
+      show("Please log in to add to bag", "login");
       return;
     }
 
@@ -50,7 +52,7 @@ const Footer = ({ isGuest = false, onARPress }) => {
     const product = catalogueState?.routes?.find(r => r.name === 'Details')?.params?.product;
     
     if (!product?._id) {
-      Alert.alert("Error", "Unable to add product");
+      show("Unable to add product", "cart");
       return;
     }
 
@@ -58,13 +60,13 @@ const Footer = ({ isGuest = false, onARPress }) => {
     try {
       const res = await apiFetch('/cart/add', 'POST', { productId: product._id, quantity: 1 }, token);
       if (res?.data || res?.message?.includes('added')) {
-        Alert.alert("Success", `${product.name} added to your bag!`);
+        show(`${product.name} added to bag`, "cart");
         navigation.navigate('Shop');
       } else {
-        Alert.alert("Error", res?.message || "Could not add to bag");
+        show(res?.message || "Could not add to bag", "cart");
       }
     } catch (e) {
-      Alert.alert("Error", "Could not add to bag");
+      show("Could not add to bag", "cart");
     }
     setAdding(false);
   };
@@ -93,8 +95,8 @@ const Footer = ({ isGuest = false, onARPress }) => {
         >
           <LayoutGrid 
             size={22} 
-            color={isActive('Catalogue') ? activeColor : inactiveColor} 
-            strokeWidth={isActive('Catalogue') ? 2.5 : 1.5} 
+            color={isActive('Catalogue') || isActive('Details')? activeColor : inactiveColor} 
+            strokeWidth={isActive('Catalogue') || isActive('Details') ? 2.5 : 1.5} 
           />
           <Text style={[styles.navLabel, { color: isActive('Catalogue') ? activeColor : inactiveColor }]}>
             Atelier
@@ -128,7 +130,7 @@ const Footer = ({ isGuest = false, onARPress }) => {
         {isGuest ? (
           <TouchableOpacity 
             style={styles.navItem} 
-            onPress={() => {}}
+            onPress={() => {navigation.navigate("Auth")}}
           >
             <Heart 
               size={22} 

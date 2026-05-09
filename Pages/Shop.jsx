@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, 
-  Dimensions, Modal, ActivityIndicator, Alert
+  Dimensions, Modal, ActivityIndicator
 } from 'react-native';
 import { 
   ShoppingBag, Trash2, Plus, Minus, ChevronRight, History, 
@@ -10,12 +10,14 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Shop({ navigation }) {
   console.log("Shop component rendering");
   const { token } = useAuth();
+  const { show } = useNotification();
   const [activeTab, setActiveTab] = useState('bag');
   const [isCheckoutVisible, setCheckoutVisible] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('idle');
@@ -92,11 +94,12 @@ export default function Shop({ navigation }) {
           setCartItems([]);
           setPaymentStatus('idle');
           setActiveTab('history');
+          show("Order placed successfully!", "cart");
         }, 2000);
       }
     } catch (e) {
       setPaymentStatus('idle');
-      Alert.alert("Error", "Payment failed");
+      show("Payment failed", "cart");
     }
   };
 

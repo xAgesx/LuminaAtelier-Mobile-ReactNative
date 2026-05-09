@@ -7,13 +7,15 @@ import {
 import { Gem, ArrowRight, Fingerprint, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from '../api';
+import { useNotification } from '../context/NotificationContext';
 
-console.log("📝 Auth.jsx loading");
+console.log("Auth.jsx loading");
 
 const { width, height } = Dimensions.get('window');
 
-export default function Auth({ navigation, onLogin }) {
-  console.log("📝 Auth component rendering");
+export default function Auth({ navigation, onLogin, onGuest }) {
+  console.log("Auth component rendering");
+  const { show } = useNotification();
   const [activeTab, setActiveTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,6 +65,7 @@ export default function Auth({ navigation, onLogin }) {
       if (data?.data?.token) {
         await AsyncStorage.setItem('token', data.data.token);
         await AsyncStorage.setItem('user', JSON.stringify(data.data.user));
+        show("Welcome back to Lumina Atelier!", "login");
         if (onLogin) {
           onLogin(data.data.token, data.data.user);
         } else {
@@ -72,7 +75,7 @@ export default function Auth({ navigation, onLogin }) {
         setError(data?.message || 'Something went wrong. Please try again.');
       }
     } catch (e) {
-        console.log("📝 Auth error:", e);
+        console.log("Auth error:", e);
         setError('Could not connect to server. Check your connection.');
       } finally {
       setLoading(false);

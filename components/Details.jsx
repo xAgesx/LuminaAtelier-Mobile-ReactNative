@@ -6,49 +6,41 @@ import {
   Text, 
   View, 
   TouchableOpacity,
-  Alert,
   ActivityIndicator
 } from 'react-native';
 import { Camera, ShoppingBag } from 'lucide-react-native';
 import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const Details = ({ route, onTryOn }) => {
   const { product } = route.params;
   const { token } = useAuth();
+  const { show } = useNotification();
   const [adding, setAdding] = useState(false);
 
   const handleAddToCart = async () => {
-    Alert.alert("DEBUG", "Button pressed! Starting add to cart...");
-    console.log("Add to cart button pressed for product:", product._id);
-    
-    console.log("Token obtained:", token ? "yes" : "no");
-    
     if (!token) {
-      Alert.alert("Login Required", "Please log in to add items to your bag");
+      show("Please log in to add to bag", "login");
       return;
     }
 
     setAdding(true);
     try {
-      console.log("Making API call to /cart/add...");
       const res = await apiFetch('/cart/add', 'POST', { 
         productId: product._id,
         quantity: 1 
       }, token);
       
-      console.log("Add to cart response:", res);
-      
       if (res?.data || res?.message?.includes('added')) {
-        Alert.alert("Success", `${product.name} has been added to your bag!`);
+        show(`${product.name} added to bag`, "cart");
       } else if (res?.error) {
-        Alert.alert("Error", res.message || "Failed to add");
+        show(res.message || "Failed to add", "error");
       } else {
-        Alert.alert("Success", `${product.name} added to bag!`);
+        show(`${product.name} added to bag`, "cart");
       }
     } catch (error) {
-      console.log("Add to cart error:", error);
-      Alert.alert("Error", "Could not add to bag. Please try again.");
+      show("Could not add to bag", "error");
     } finally {
       setAdding(false);
     }

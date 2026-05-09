@@ -21,6 +21,7 @@ import Profile from './Pages/Profile';
 import Wishlist from './Pages/Wishlist';
 import Shop from './Pages/Shop';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 function AtelierStack({ onTryOn }) {
   return (
@@ -114,7 +115,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <NotificationProvider>
+        <AppContent />
+      </NotificationProvider>
     </AuthProvider>
   );
 }
